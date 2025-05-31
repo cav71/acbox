@@ -233,7 +233,7 @@ def main() -> int:
     expected = {c["name"]: c["version"] for c in config["packages"]}
     found = get_installed_using_pip(python)
 
-    def skipfn(_: str, left: str, _: str) -> bool:
+    def skipfn(_name: str, left: str, _right: str) -> bool:
         return left == "N/A"
 
     report.append(report_diffdict(expected, found, skipfn, " between installed packages and expected"))
