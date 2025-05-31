@@ -1,10 +1,6 @@
 {
   "packages": [
     {
-      "name": "Jinja2",
-      "version": "3.1.6"
-    },
-    {
       "name": "pip",
       "version": "25.1.1"
     }
