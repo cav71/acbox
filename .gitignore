@@ -1,0 +1,16 @@
+.venv/
+
+/build
+/dist
+/.coverage
+
+# Compiled Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# System, editor and IDE files
+*.swp
+*.swo
+*~
