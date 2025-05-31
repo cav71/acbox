@@ -140,7 +140,7 @@ def report_diffdict(
         msg = "\n".join(f"- {', '.join(d)}" for d in delta)
         return Record(f"difference detected{message}", S.FAILED, msg)
     else:
-        return Record(f"no difference detected{msg}", S.OK)
+        return Record(f"no difference detected{message}", S.OK)
 
 
 def dumps(report: list[Record]) -> str:
