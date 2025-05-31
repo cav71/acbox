@@ -40,34 +40,34 @@ jobs:
         run: |
             python release/checks-and-balances.py
 
-#       - name: Run Python checks (ruff)
-#         shell: bash
-#         env:
-#           PYTHONPATH: src
-#         run: |
-#            ruff check src tests
-# 
-#       - name: Run Python checks (mypy)
-#         shell: bash
-#         env:
-#           PYTHONPATH: src
-#           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
-#         run: |
-#           mypy src \
-#             --no-incremental --xslt-html-report $OUTDIR/mypy
-# 
-#       - name: Run Python checks
-#         shell: bash
-#         env:
-#           PYTHONPATH: src
-#           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
-#         run: |
-#           py.test \
-#               --cov=${{ env.PACKAGE }} \
-#               --cov-report=html:$OUTDIR/coverage --cov-report=xml:$OUTDIR/coverage.xml \
-#               --junitxml=$OUTDIR/junit/junit.xml --html=$OUTDIR/junit/junit.html --self-contained-html \
-#             tests
-# 
+      - name: Run Python checks (ruff)
+        shell: bash
+        env:
+          PYTHONPATH: src
+        run: |
+           ruff check src tests
+
+      - name: Run Python checks (mypy)
+        shell: bash
+        env:
+          PYTHONPATH: src
+          OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
+        run: |
+          mypy src \
+            --no-incremental --xslt-html-report $OUTDIR/mypy
+
+      - name: Run Python checks
+        shell: bash
+        env:
+          PYTHONPATH: src
+          OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
+        run: |
+          py.test \
+              --cov=${{ env.PACKAGE }} \
+              --cov-report=html:$OUTDIR/coverage --cov-report=xml:$OUTDIR/coverage.xml \
+              --junitxml=$OUTDIR/junit/junit.xml --html=$OUTDIR/junit/junit.html --self-contained-html \
+            tests
+
 #       - name: Build wheel packages
 #         if: ${{ ! contains(matrix.os, 'windows') }}
 #         env:

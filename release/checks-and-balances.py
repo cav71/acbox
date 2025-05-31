@@ -4,11 +4,11 @@
 from __future__ import annotations
 
 import contextlib
+import copy
 import dataclasses as dc
 import json
 import os
 import platform
-import re
 import subprocess  # nosec B404
 import sys
 from enum import IntEnum, auto
@@ -39,8 +39,8 @@ def runc(
     overrides: dict[str, str | int] | None = None,
     **kwargs,
 ) -> str | None:
-    env = os.environ.copy()
-    env.update(overrides or {})
+    env = copy.deepcopy(os.environ)
+    env.update(overrides or {})  # type: ignore[arg-type]
     cmd = [str(cmd)] if isinstance(cmd, (Path, str)) else [str(c) for c in cmd]
     if kwargs.pop("quiet", None):
         kwargs["stderr"] = subprocess.DEVNULL
@@ -76,7 +76,9 @@ def stripkey(txt: str) -> str:
     return txt.strip().lower().replace("_", "-")
 
 
-def get_installed_using_pip(python: Path) -> dict[str, str]:
+def get_installed_using_pip(python: Path | None) -> dict[str, str]:
+    if not python:
+        return {}
     output = runc(
         [python, "-m", "pip", "list", "--format", "json"],
         overrides={
@@ -84,6 +86,8 @@ def get_installed_using_pip(python: Path) -> dict[str, str]:
             "PIPENV_VENV_IN_PROJECT": "1",
         },
     )
+    if not output:
+        return {}
 
     result = {}
     for item in json.loads(output.strip()):
@@ -92,34 +96,9 @@ def get_installed_using_pip(python: Path) -> dict[str, str]:
     return result
 
 
-def get_installed_using_pipenv(workdir: Path) -> dict[str, str]:
-    output = runc(["pipenv", "requirements"], cwd=workdir).strip()
-    packages = {}
-    for line in output.split("\n"):
-        # eg. lines like '-i url'
-        if "-i " in line:
-            continue
-
-        values = line
-        if ";" in line:
-            values = line.partition(";")[0]
-        values = values.split("==")  # in requirements only ==
-
-        # eg.
-        if line.count("@") == 2:
-            values = line.split("@")[::2]
-        elif match := (re.compile(r"(https|http|file)://(?P<url>[^ ;]+)").search(line)):
-            # https://some.url/path/csv2ofx-some-weird--0.30.1-py2.py3-none-any.whl ; python_version >= '3.9'
-            items = match.group("url").rpartition("/")[2].split("-")[:-3]
-            values = "-".join(items[:-1]), items[-1]
-
-        name, version = values
-        packages[stripkey(name)] = version
-
-    return packages
-
-
-def diffdict(left: dict[str, str], right: dict[str, str], skipfn: Callable[[str, str, str], bool] | None = None) -> list[str, str, str]:
+def diffdict(
+    left: dict[str, str], right: dict[str, str], skipfn: Callable[[str, str, str], bool] | None = None
+) -> list[tuple[str, str, str]]:
     # diff between 2 dict
     result = []
     for key in set(left).union(right):
@@ -196,10 +175,10 @@ def missing_so_files(root: Path):
                 continue
             name, target = [p.strip() for p in line.split("=>")]
             if target == "not found":
-                target = None
+                # target = None
                 lso.missing.append(name)
             else:
-                target = target.partition(" ")[0]
+                target = (target or "").partition(" ")[0]
                 lso.deps[name] = Path(target)
 
     if any(lso.missing for lso in result.values()):
@@ -208,7 +187,7 @@ def missing_so_files(root: Path):
             if not lso.missing:
                 continue
             lines.append(f"{path} missing: {', '.join(lso.missing)}")
-        return Record("missing .so files", "\n".join(lines))
+        return Record("missing .so files", report="\n".join(lines))
 
     # TODO check for libpython rpaths!
     return Record(".so files ok", S.OK)
