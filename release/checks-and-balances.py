@@ -217,13 +217,13 @@ def main() -> int:
     report.append(Record(f"sys.platform value: {sys.platform}"))
 
     # python
-    python = which1("python")
+    python = (which1("python") or "").strip()
     version = (runc(["python", "-V"]).partition(" ")[2] if python else "Not found").strip()
-    report.append(Record(f"where's 1st python (v. {version.strip()}): {str(python).strip('\n')}"))
+    report.append(Record(f"where's 1st python (v. {version.strip()}): {python}"))
 
-    python3 = which1("python3")
+    python3 = (which1("python3") or "").strip()
     version = (runc(["python3", "-V"]).partition(" ")[2] if python else "Not found").strip()
-    report.append(Record(f"where's 1st python3 (v. {version.strip()}): {str(python3).strip('\n')}"))
+    report.append(Record(f"where's 1st python3 (v. {version.strip()}): {python3}"))
 
     report.append(Record("python from same install", S.OK if (python.parent / f"{python.name}3") == python3 else S.FAILED))
 
