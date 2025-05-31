@@ -217,11 +217,11 @@ def main() -> int:
     report.append(Record(f"sys.platform value: {sys.platform}"))
 
     # python
-    python = (which1("python") or "").strip()
+    python = str(which1("python") or "").strip()
     version = (runc(["python", "-V"]).partition(" ")[2] if python else "Not found").strip()
     report.append(Record(f"where's 1st python (v. {version.strip()}): {python}"))
 
-    python3 = (which1("python3") or "").strip()
+    python3 = str(which1("python3") or "").strip()
     version = (runc(["python3", "-V"]).partition(" ")[2] if python else "Not found").strip()
     report.append(Record(f"where's 1st python3 (v. {version.strip()}): {python3}"))
 
