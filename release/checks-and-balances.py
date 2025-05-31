@@ -211,21 +211,19 @@ def main() -> int:
 
     report = []
 
-    report.append(check_value("architecture", "x86_64", platform.uname().machine, S.WARN))
-    report.append(check_value("system", "Linux", platform.uname().system, S.WARN))
+    # system
+    report.append(Record(f"architecture: {platform.uname().machine}"))
+    report.append(Record(f"system: {platform.uname().system}"))
+    report.append(Record(f"sys.platform value: {sys.platform}"))
 
     # python
     python = which1("python")
-    report.append(Record(f"where's 1st python: {python}"))
-    version = runc(["python", "-V"])
-    if version:
-        report.append(Record(f"python version: {version}"))
+    version = (runc(["python", "-V"]).partition(" ")[2] if python else "Not found").strip()
+    report.append(Record(f"where's 1st python (v. {version.strip()}): {str(python).strip('\n')}"))
 
     python3 = which1("python3")
-    report.append(Record(f"where's 1st python3: {python3}"))
-    version = runc(["python3", "-V"])
-    if version:
-        report.append(Record(f"python3 version: {version}"))
+    version = (runc(["python3", "-V"]).partition(" ")[2] if python else "Not found").strip()
+    report.append(Record(f"where's 1st python3 (v. {version.strip()}): {str(python3).strip('\n')}"))
 
     report.append(Record("python from same install", S.OK if (python.parent / f"{python.name}3") == python3 else S.FAILED))
 
