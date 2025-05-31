@@ -9,6 +9,7 @@ source .venv/bin/activate
 ```
 
 ```
-pip install --group dev
+python -m pip install --upgrade pip
+python -m pip install --group dev
 pre-commit install
 ```

@@ -55,7 +55,7 @@ namespaces = true
 
 [tool.ruff]
 target-version = "py39"
-line-length = 88
+line-length = 140
 src = ["src/acbox"]
 
 [tool.ruff.format]

@@ -4,6 +4,7 @@
 #   (to install make: pacmman -S make)
 
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
+SOURCES=release/checks-and-balances.py
 
 export PYTHONPATH=$(ROOT_DIR)/src
 
@@ -19,12 +20,12 @@ check: check-fmt lint ## ruff check + lint
 
 .PHONY: check-fmt
 check-fmt:  ## Runs ruff check
-	@ruff check src tests && echo "🟢 ruff check pass"
+	@ruff check $(SOURCES) && echo "🟢 ruff check pass"
 
 .PHONY: fmt
 fmt:  ## Format code (ruff check --fix), updating source files
-	@ruff check --fix src tests
-	@ruff format src tests
+	@ruff format $(SOURCES)
+	@ruff check --fix $(SOURCES)
 
 .PHONY: lint
 lint:  ## Runs the linter (mypy) and report errors.
