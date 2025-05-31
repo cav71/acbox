@@ -66,6 +66,14 @@ jobs:
               --junitxml=$OUTDIR/junit/junit.xml --html=$OUTDIR/junit/junit.html --self-contained-html \
             tests
 
+      # https://github.com/codecov/codecov-action
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: $OUTDIR/coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true # optional (default = false)
+
 #       - name: Build wheel packages
 #         if: ${{ ! contains(matrix.os, 'windows') }}
 #         env:
