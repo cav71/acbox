@@ -14,3 +14,5 @@ def test_which():
     paths = fileops.which_n(exe)
     assert isinstance(paths, list)
     assert paths[0] == fileops.which(exe)
+
+    assert fileops.which_n("xwdwxEW") is None
