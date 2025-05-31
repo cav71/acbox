@@ -162,6 +162,20 @@ def dumps(report: list[Record]) -> str:
     return "\n".join(result)
 
 
+def check_python(name: str) -> Record:
+    exe = which1(name)
+    if exe is None:
+        return Record(f"cannot find {name}", S.FAILED)
+    version = runc([name, "-V"])
+    status = S.OK
+    if not version:
+        version = "N/A"
+        status = S.WARN
+    else:
+        version = version.partition(" ")[2].strip()
+    return Record(f"location for {name} (v. {version}): {exe}", status)
+
+
 def missing_so_files(root: Path):
     @dc.dataclass
     class LSO:
@@ -200,7 +214,7 @@ def missing_so_files(root: Path):
     return Record(".so files ok", S.OK)
 
 
-def check_value(what, expected, found, status=S.FAILED) -> Record:
+def test_value(what, expected, found, status=S.FAILED) -> Record:
     if expected == found:
         return Record(f"found the expected value for '{what}': '{expected}'", S.OK)
     return Record(f"value expected for '{what}' is '{expected}' but found '{found}'", status)
@@ -217,19 +231,12 @@ def main() -> int:
     report.append(Record(f"sys.platform value: {sys.platform}"))
 
     # python
-    python = str(which1("python") or "").strip()
-    version = (runc(["python", "-V"]).partition(" ")[2] if python else "Not found").strip()
-    report.append(Record(f"where's 1st python (v. {version.strip()}): {python}"))
-
-    python3 = str(which1("python3") or "").strip()
-    version = (runc(["python3", "-V"]).partition(" ")[2] if python else "Not found").strip()
-    report.append(Record(f"where's 1st python3 (v. {version.strip()}): {python3}"))
-
-    report.append(Record("python from same install", S.OK if (python.parent / f"{python.name}3") == python3 else S.FAILED))
+    report.append(check_python("python"))
+    report.append(check_python("python3"))
 
     # packages
     expected = {c["name"]: c["version"] for c in config["packages"]}
-    found = get_installed_using_pip(python)
+    found = get_installed_using_pip(which1("python"))
 
     def skipfn(_name: str, left: str, _right: str) -> bool:
         return left == "N/A"
