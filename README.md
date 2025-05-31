@@ -13,3 +13,5 @@ python -m pip install --upgrade pip
 python -m pip install --group dev
 pre-commit install
 ```
+
+Ready.
