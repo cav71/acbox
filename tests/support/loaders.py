@@ -31,7 +31,7 @@ def resolver(request):
     @dc.dataclass
     class Resolver:
         root: Path  # type: ignore[annotation-unchecked]
-        name: str
+        name: str  # type: ignore[annotation-unchecked]
 
         def lookup(self, path: Path | str) -> Path:
             candidates = [
