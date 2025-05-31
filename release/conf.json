@@ -1,120 +1,12 @@
 {
   "packages": [
     {
-      "name": "build",
-      "version": "1.2.2.post1"
-    },
-    {
-      "name": "cfgv",
-      "version": "3.4.0"
-    },
-    {
-      "name": "coverage",
-      "version": "7.8.2"
-    },
-    {
-      "name": "distlib",
-      "version": "0.3.9"
-    },
-    {
-      "name": "filelock",
-      "version": "3.18.0"
-    },
-    {
-      "name": "identify",
-      "version": "2.6.12"
-    },
-    {
-      "name": "iniconfig",
-      "version": "2.1.0"
-    },
-    {
       "name": "Jinja2",
       "version": "3.1.6"
     },
     {
-      "name": "MarkupSafe",
-      "version": "3.0.2"
-    },
-    {
-      "name": "mypy",
-      "version": "1.16.0"
-    },
-    {
-      "name": "mypy_extensions",
-      "version": "1.1.0"
-    },
-    {
-      "name": "nodeenv",
-      "version": "1.9.1"
-    },
-    {
-      "name": "packaging",
-      "version": "25.0"
-    },
-    {
-      "name": "pathspec",
-      "version": "0.12.1"
-    },
-    {
       "name": "pip",
       "version": "25.1.1"
-    },
-    {
-      "name": "platformdirs",
-      "version": "4.3.8"
-    },
-    {
-      "name": "pluggy",
-      "version": "1.6.0"
-    },
-    {
-      "name": "pre_commit",
-      "version": "4.2.0"
-    },
-    {
-      "name": "pyproject_hooks",
-      "version": "1.2.0"
-    },
-    {
-      "name": "pytest",
-      "version": "8.3.5"
-    },
-    {
-      "name": "pytest-asyncio",
-      "version": "1.0.0"
-    },
-    {
-      "name": "pytest-cov",
-      "version": "6.1.1"
-    },
-    {
-      "name": "pytest-html",
-      "version": "4.1.1"
-    },
-    {
-      "name": "pytest-metadata",
-      "version": "3.1.1"
-    },
-    {
-      "name": "PyYAML",
-      "version": "6.0.2"
-    },
-    {
-      "name": "ruff",
-      "version": "0.11.12"
-    },
-    {
-      "name": "types-python-dateutil",
-      "version": "2.9.0.20250516"
-    },
-    {
-      "name": "typing_extensions",
-      "version": "4.13.2"
-    },
-    {
-      "name": "virtualenv",
-      "version": "20.31.2"
     }
   ]
 }
