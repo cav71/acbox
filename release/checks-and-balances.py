@@ -29,6 +29,10 @@ class Record:
     report: str = ""
 
 
+def indent(txt: str, pre: str, first: str | None = None) -> str:
+    return (pre if first is None else first) + txt.replace("\n", "\n" + pre)
+
+
 def runc(
     cmd: str | Path | list[str | Path],
     overrides: dict[str, str | int] | None = None,
@@ -103,7 +107,6 @@ def get_installed_using_pipenv(workdir: Path) -> dict[str, str]:
 
         # eg.
         if line.count("@") == 2:
-            # instructor @ git+https://github.com/narmi/instructor.git@2b602c53679c5d6bce2048828df92a68359627dd
             values = line.split("@")[::2]
         elif match := (re.compile(r"(https|http|file)://(?P<url>[^ ;]+)").search(line)):
             # https://some.url/path/csv2ofx-some-weird--0.30.1-py2.py3-none-any.whl ; python_version >= '3.9'
@@ -129,10 +132,6 @@ def diffdict(left: dict[str, str], right: dict[str, str], skip: dict[str, tuple[
     return result
 
 
-def indent(txt: str, pre: str, first: str | None = None) -> str:
-    return (pre if first is None else first) + txt.replace("\n", "\n" + pre)
-
-
 def dumps(report: list[Record]) -> str:
     result = []
 
@@ -150,12 +149,6 @@ def dumps(report: list[Record]) -> str:
         if record.report:
             result.append(indent(record.report, " " * 2))
     return "\n".join(result)
-
-
-def check_value(what, expected, found, status=S.FAILED) -> Record:
-    if expected == found:
-        return Record(f"found the expected value for '{what}': '{expected}'", S.OK)
-    return Record(f"value expected for '{what}' is '{expected}' but found '{found}'", status)
 
 
 def missing_so_files(root: Path):
@@ -196,15 +189,24 @@ def missing_so_files(root: Path):
     return Record(".so files ok", S.OK)
 
 
+def check_value(what, expected, found, status=S.FAILED) -> Record:
+    if expected == found:
+        return Record(f"found the expected value for '{what}': '{expected}'", S.OK)
+    return Record(f"value expected for '{what}' is '{expected}' but found '{found}'", status)
+
+
 def main() -> int:
     report = []
 
     report.append(check_value("architecture", "x86_64", platform.uname().machine, S.WARN))
-    report.append(check_value("system", "Linux", platform.uname().system))
+    report.append(check_value("system", "Linux", platform.uname().system, S.WARN))
 
     # python
-    found = which("python")
-    report.append(Record(f"where's python: {found}", S.OK if found else S.WARN))
+    found = which1("python")
+    report.append(Record(f"where's 1st python: {found}"))
+
+    found = which1("python3")
+    report.append(Record(f"where's 1st python3: {found}"))
 
     #     found = runc(["pipenv", "run", "which", "python"], cwd=WORKDIR).strip()
     #     report.append(Record(f"where's the python detected by pipenv: {found}"))
@@ -219,18 +221,6 @@ def main() -> int:
     #     report.append(Record(f"where's the python3 detected by pipenv: {found}"))
     #     found = runc(["pipenv", "run", "python3", "-V"], cwd=WORKDIR).strip()
     #     report.append(Record(f"which python version detected by pipenv: {found}"))
-    #
-    #     # TODO verify this, for what imports
-    #     found = (
-    #         runc(
-    #             ["pipenv", "run", "python", "-c", "import narmi;print(narmi.__file__)"],
-    #             cwd=WORKDIR,
-    #         )
-    #         or ""
-    #     ).strip()
-    #     report.append(
-    #         Record(f"narmi source '{found or 'not-found'}'", S.OK if found else S.FAILED)
-    #     )
     #
     #     # packages/.so
     #     report.append(check_installed_python_packages())
