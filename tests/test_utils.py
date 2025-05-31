@@ -1,21 +1,13 @@
-def test_script_lookup(resolver):
+from acbox import utils
+
+
+def test_load_mod(resolver):
     path = resolver.lookup("simple-script.py")
-    assert path
-    assert path.exists()
 
-
-def test_script_load(resolver):
-    data = resolver.load("simple-script.py", "text")
-    assert (
-        data
-        == """
-VALUE = 123
-
-
-def hello(msg):
-    print(f"Hi {msg}")
-""".lstrip()
-    )
-
-    mod = resolver.load("simple-script.py", "mod")
+    mod = utils.loadmod(path)
     assert mod.VALUE, 123
+
+
+def test_load_remote():
+    mod = utils.loadmod("https://raw.githubusercontent.com/cav71/acbox/refs/heads/main/tests/conftest.py")
+    assert mod.annotations

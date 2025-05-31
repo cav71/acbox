@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing.abc import ModuleType
+from types import ModuleType
 
 
 def loadmod(path: Path | str) -> ModuleType:
