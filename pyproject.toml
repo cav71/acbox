@@ -27,6 +27,20 @@ classifiers = [
 
 dependencies = []
 
+[dependency-groups]
+dev = [
+    "build",
+    "mypy",
+    "pre-commit",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-html",
+    "ruff",
+    "types-python-dateutil",
+]
+
+
 [project.optional-dependencies]
 extra = []
 
