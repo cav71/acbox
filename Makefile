@@ -22,14 +22,17 @@ check: ## ruff check + lint
 	@echo "🟢 [$@] pass"
 
 .PHONY: fmt
-fmt:  ## Format code (ruff check --fix), updating source files
+fmt:  ## format code (ruff check --fix), updating source files
 	ruff format $(SOURCES)
 	ruff check --fix $(SOURCES)
 
 .PHONY: lint
-lint:  ## Runs the linter (mypy) and report errors.
+lint:  ## run the linter (mypy) and report errors.
 	@mypy src tests && echo "🟢 mypy check pass"
 
+.PHONY: tests
+tests:  ## run all tests
+	pytest -vvs tests
 
 .PHONY: clean
 clean:  ## clean all artifacts
