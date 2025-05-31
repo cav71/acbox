@@ -9,6 +9,7 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 env:
   PACKAGE: acbox
+  PYTHONPATH: src
 
 jobs:
   build:
@@ -42,24 +43,21 @@ jobs:
 
       - name: Run Python checks (ruff)
         shell: bash
-        env:
-          PYTHONPATH: src
         run: |
-           ruff check src tests
+            ruff check src tests
+            ruff format --check src tests
 
       - name: Run Python checks (mypy)
         shell: bash
         env:
-          PYTHONPATH: src
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
         run: |
-          mypy src \
-            --no-incremental --xslt-html-report $OUTDIR/mypy
+            mypy src tests \
+              --no-incremental --xslt-html-report $OUTDIR/mypy
 
-      - name: Run Python checks
+      - name: Run Python tests
         shell: bash
         env:
-          PYTHONPATH: src
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
         run: |
           py.test \

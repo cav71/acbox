@@ -29,3 +29,10 @@ fmt:  ## Format code (ruff check --fix), updating source files
 .PHONY: lint
 lint:  ## Runs the linter (mypy) and report errors.
 	@mypy src tests && echo "🟢 mypy check pass"
+
+
+.PHONY: clean
+clean:  ## clean all artifacts
+	@rm -rf .dmypy.json src/acbox.egg-info dist
+	@python release/clean.py $(SOURCES)
+	@echo "🟢 cleaned"
