@@ -13,6 +13,7 @@ import subprocess  # nosec B404
 import sys
 from enum import IntEnum, auto
 from pathlib import Path
+from typing import Callable
 
 
 class S(IntEnum):
@@ -75,14 +76,13 @@ def stripkey(txt: str) -> str:
     return txt.strip().lower().replace("_", "-")
 
 
-def get_installed_using_pip(workdir: Path) -> dict[str, str]:
+def get_installed_using_pip(python: Path) -> dict[str, str]:
     output = runc(
-        ["pipenv", "run", "pip", "list", "--format", "json"],
+        [python, "-m", "pip", "list", "--format", "json"],
         overrides={
             "PIP_NO_CACHE_DIR": "yes",
             "PIPENV_VENV_IN_PROJECT": "1",
         },
-        cwd=workdir,
     )
 
     result = {}
@@ -119,17 +119,28 @@ def get_installed_using_pipenv(workdir: Path) -> dict[str, str]:
     return packages
 
 
-def diffdict(left: dict[str, str], right: dict[str, str], skip: dict[str, tuple[str, str] | None]) -> list[str, str, str]:
+def diffdict(left: dict[str, str], right: dict[str, str], skipfn: Callable[[str, str, str], bool] | None = None) -> list[str, str, str]:
     # diff between 2 dict
     result = []
     for key in set(left).union(right):
         if left.get(key) == right.get(key):
             continue
         values = (left.get(key) or "N/A", right.get(key) or "N/A")
-        if key in skip and ((not skip[key]) or (skip[key] == values)):
+        if skipfn and skipfn(key, left.get(key) or "N/A", right.get(key) or "N/A"):
             continue
         result.append((key, *values))
     return result
+
+
+def report_diffdict(
+    left: dict[str, str], right: dict[str, str], skipfn: Callable[[str, str, str], bool] | None = None, message: str = ""
+) -> Record:
+    delta = diffdict(left, right, skipfn)
+    if delta:
+        msg = "\n".join(f"- {', '.join(d)}" for d in delta)
+        return Record(f"difference detected{message}", S.FAILED, msg)
+    else:
+        return Record(f"no difference detected{msg}", S.OK)
 
 
 def dumps(report: list[Record]) -> str:
@@ -196,32 +207,37 @@ def check_value(what, expected, found, status=S.FAILED) -> Record:
 
 
 def main() -> int:
+    config = json.loads((Path(__file__).parent / "conf.json").read_text())
+
     report = []
 
     report.append(check_value("architecture", "x86_64", platform.uname().machine, S.WARN))
     report.append(check_value("system", "Linux", platform.uname().system, S.WARN))
 
     # python
-    found = which1("python")
-    report.append(Record(f"where's 1st python: {found}"))
+    python = which1("python")
+    report.append(Record(f"where's 1st python: {python}"))
+    version = runc(["python", "-V"])
+    if version:
+        report.append(Record(f"python version: {version}"))
 
-    found = which1("python3")
-    report.append(Record(f"where's 1st python3: {found}"))
+    python3 = which1("python3")
+    report.append(Record(f"where's 1st python3: {python3}"))
+    version = runc(["python3", "-V"])
+    if version:
+        report.append(Record(f"python3 version: {version}"))
 
-    #     found = runc(["pipenv", "run", "which", "python"], cwd=WORKDIR).strip()
-    #     report.append(Record(f"where's the python detected by pipenv: {found}"))
-    #
-    #     # python3
-    #     found = runc(["which", "python3"]).strip()
-    #     report.append(Record(f"where's python3: {found}"))
-    #     found = runc(["python3", "-V"]).strip()
-    #     report.append(Record(f"which python3 version: {found}"))
-    #
-    #     found = runc(["pipenv", "run", "which", "python3"], cwd=WORKDIR).strip()
-    #     report.append(Record(f"where's the python3 detected by pipenv: {found}"))
-    #     found = runc(["pipenv", "run", "python3", "-V"], cwd=WORKDIR).strip()
-    #     report.append(Record(f"which python version detected by pipenv: {found}"))
-    #
+    report.append(Record("python from same install", S.OK if (python.parent / f"{python.name}3") == python3 else S.FAILED))
+
+    # packages
+    expected = {c["name"]: c["version"] for c in config["packages"]}
+    found = get_installed_using_pip(python)
+
+    def skipfn(_: str, left: str, _: str) -> bool:
+        return left == "N/A"
+
+    report.append(report_diffdict(expected, found, skipfn, " between installed packages and expected"))
+
     #     # packages/.so
     #     report.append(check_installed_python_packages())
     #     report.append(missing_so_files(Path("/opt/python")))
