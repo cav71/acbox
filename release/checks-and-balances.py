@@ -4,15 +4,16 @@
 from __future__ import annotations
 
 import contextlib
+import copy
 import dataclasses as dc
 import json
 import os
 import platform
-import re
 import subprocess  # nosec B404
 import sys
 from enum import IntEnum, auto
 from pathlib import Path
+from typing import Callable
 
 
 class S(IntEnum):
@@ -29,13 +30,17 @@ class Record:
     report: str = ""
 
 
+def indent(txt: str, pre: str, first: str | None = None) -> str:
+    return (pre if first is None else first) + txt.replace("\n", "\n" + pre)
+
+
 def runc(
     cmd: str | Path | list[str | Path],
     overrides: dict[str, str | int] | None = None,
     **kwargs,
 ) -> str | None:
-    env = os.environ.copy()
-    env.update(overrides or {})
+    env = copy.deepcopy(os.environ)
+    env.update(overrides or {})  # type: ignore[arg-type]
     cmd = [str(cmd)] if isinstance(cmd, (Path, str)) else [str(c) for c in cmd]
     if kwargs.pop("quiet", None):
         kwargs["stderr"] = subprocess.DEVNULL
@@ -71,15 +76,18 @@ def stripkey(txt: str) -> str:
     return txt.strip().lower().replace("_", "-")
 
 
-def get_installed_using_pip(workdir: Path) -> dict[str, str]:
+def get_installed_using_pip(python: Path | None) -> dict[str, str]:
+    if not python:
+        return {}
     output = runc(
-        ["pipenv", "run", "pip", "list", "--format", "json"],
+        [python, "-m", "pip", "list", "--format", "json"],
         overrides={
             "PIP_NO_CACHE_DIR": "yes",
             "PIPENV_VENV_IN_PROJECT": "1",
         },
-        cwd=workdir,
     )
+    if not output:
+        return {}
 
     result = {}
     for item in json.loads(output.strip()):
@@ -88,49 +96,30 @@ def get_installed_using_pip(workdir: Path) -> dict[str, str]:
     return result
 
 
-def get_installed_using_pipenv(workdir: Path) -> dict[str, str]:
-    output = runc(["pipenv", "requirements"], cwd=workdir).strip()
-    packages = {}
-    for line in output.split("\n"):
-        # eg. lines like '-i url'
-        if "-i " in line:
-            continue
-
-        values = line
-        if ";" in line:
-            values = line.partition(";")[0]
-        values = values.split("==")  # in requirements only ==
-
-        # eg.
-        if line.count("@") == 2:
-            # instructor @ git+https://github.com/narmi/instructor.git@2b602c53679c5d6bce2048828df92a68359627dd
-            values = line.split("@")[::2]
-        elif match := (re.compile(r"(https|http|file)://(?P<url>[^ ;]+)").search(line)):
-            # https://some.url/path/csv2ofx-some-weird--0.30.1-py2.py3-none-any.whl ; python_version >= '3.9'
-            items = match.group("url").rpartition("/")[2].split("-")[:-3]
-            values = "-".join(items[:-1]), items[-1]
-
-        name, version = values
-        packages[stripkey(name)] = version
-
-    return packages
-
-
-def diffdict(left: dict[str, str], right: dict[str, str], skip: dict[str, tuple[str, str] | None]) -> list[str, str, str]:
+def diffdict(
+    left: dict[str, str], right: dict[str, str], skipfn: Callable[[str, str, str], bool] | None = None
+) -> list[tuple[str, str, str]]:
     # diff between 2 dict
     result = []
     for key in set(left).union(right):
         if left.get(key) == right.get(key):
             continue
         values = (left.get(key) or "N/A", right.get(key) or "N/A")
-        if key in skip and ((not skip[key]) or (skip[key] == values)):
+        if skipfn and skipfn(key, left.get(key) or "N/A", right.get(key) or "N/A"):
             continue
         result.append((key, *values))
     return result
 
 
-def indent(txt: str, pre: str, first: str | None = None) -> str:
-    return (pre if first is None else first) + txt.replace("\n", "\n" + pre)
+def report_diffdict(
+    left: dict[str, str], right: dict[str, str], skipfn: Callable[[str, str, str], bool] | None = None, message: str = ""
+) -> Record:
+    delta = diffdict(left, right, skipfn)
+    if delta:
+        msg = "\n".join(f"- {', '.join(d)}" for d in delta)
+        return Record(f"difference detected{message}", S.FAILED, msg)
+    else:
+        return Record(f"no difference detected{message}", S.OK)
 
 
 def dumps(report: list[Record]) -> str:
@@ -152,10 +141,18 @@ def dumps(report: list[Record]) -> str:
     return "\n".join(result)
 
 
-def check_value(what, expected, found, status=S.FAILED) -> Record:
-    if expected == found:
-        return Record(f"found the expected value for '{what}': '{expected}'", S.OK)
-    return Record(f"value expected for '{what}' is '{expected}' but found '{found}'", status)
+def check_python(name: str) -> Record:
+    exe = which1(name)
+    if exe is None:
+        return Record(f"cannot find {name}", S.FAILED)
+    version = runc([name, "-V"])
+    status = S.OK
+    if not version:
+        version = "N/A"
+        status = S.WARN
+    else:
+        version = version.partition(" ")[2].strip()
+    return Record(f"location for {name} (v. {version}): {exe}", status)
 
 
 def missing_so_files(root: Path):
@@ -178,10 +175,10 @@ def missing_so_files(root: Path):
                 continue
             name, target = [p.strip() for p in line.split("=>")]
             if target == "not found":
-                target = None
+                # target = None
                 lso.missing.append(name)
             else:
-                target = target.partition(" ")[0]
+                target = (target or "").partition(" ")[0]
                 lso.deps[name] = Path(target)
 
     if any(lso.missing for lso in result.values()):
@@ -190,48 +187,41 @@ def missing_so_files(root: Path):
             if not lso.missing:
                 continue
             lines.append(f"{path} missing: {', '.join(lso.missing)}")
-        return Record("missing .so files", "\n".join(lines))
+        return Record("missing .so files", report="\n".join(lines))
 
     # TODO check for libpython rpaths!
     return Record(".so files ok", S.OK)
 
 
+def test_value(what, expected, found, status=S.FAILED) -> Record:
+    if expected == found:
+        return Record(f"found the expected value for '{what}': '{expected}'", S.OK)
+    return Record(f"value expected for '{what}' is '{expected}' but found '{found}'", status)
+
+
 def main() -> int:
+    config = json.loads((Path(__file__).parent / "conf.json").read_text())
+
     report = []
 
-    report.append(check_value("architecture", "x86_64", platform.uname().machine, S.WARN))
-    report.append(check_value("system", "Linux", platform.uname().system))
+    # system
+    report.append(Record(f"architecture: {platform.uname().machine}"))
+    report.append(Record(f"system: {platform.uname().system}"))
+    report.append(Record(f"sys.platform value: {sys.platform}"))
 
     # python
-    found = which("python")
-    report.append(Record(f"where's python: {found}", S.OK if found else S.WARN))
+    report.append(check_python("python"))
+    report.append(check_python("python3"))
 
-    #     found = runc(["pipenv", "run", "which", "python"], cwd=WORKDIR).strip()
-    #     report.append(Record(f"where's the python detected by pipenv: {found}"))
-    #
-    #     # python3
-    #     found = runc(["which", "python3"]).strip()
-    #     report.append(Record(f"where's python3: {found}"))
-    #     found = runc(["python3", "-V"]).strip()
-    #     report.append(Record(f"which python3 version: {found}"))
-    #
-    #     found = runc(["pipenv", "run", "which", "python3"], cwd=WORKDIR).strip()
-    #     report.append(Record(f"where's the python3 detected by pipenv: {found}"))
-    #     found = runc(["pipenv", "run", "python3", "-V"], cwd=WORKDIR).strip()
-    #     report.append(Record(f"which python version detected by pipenv: {found}"))
-    #
-    #     # TODO verify this, for what imports
-    #     found = (
-    #         runc(
-    #             ["pipenv", "run", "python", "-c", "import narmi;print(narmi.__file__)"],
-    #             cwd=WORKDIR,
-    #         )
-    #         or ""
-    #     ).strip()
-    #     report.append(
-    #         Record(f"narmi source '{found or 'not-found'}'", S.OK if found else S.FAILED)
-    #     )
-    #
+    # packages
+    expected = {c["name"]: c["version"] for c in config["packages"]}
+    found = get_installed_using_pip(which1("python"))
+
+    def skipfn(_name: str, left: str, _right: str) -> bool:
+        return left == "N/A"
+
+    report.append(report_diffdict(expected, found, skipfn, " between installed packages and expected"))
+
     #     # packages/.so
     #     report.append(check_installed_python_packages())
     #     report.append(missing_so_files(Path("/opt/python")))

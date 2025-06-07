@@ -1,0 +1,8 @@
+{
+  "packages": [
+    {
+      "name": "pip",
+      "version": "25.1.1"
+    }
+  ]
+}
