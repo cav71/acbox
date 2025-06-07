@@ -10,8 +10,8 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 env:
   PACKAGE: acbox
   PYTHONPATH: src
-  #GITHUB_DUMP: ${{ toJson(github.ref) }}
-  GITHUB_DUMP: ${{ format('{"ref": {0}}', github.ref) }}
+  GITHUB_DUMP: ${{ toJson(github.ref) }}
+  GITHUB_DUMP2: '{"ref": ${{ github.ref }}}'
   TARGETPY: "3.13"
   TARGETOS: "ubuntu-latest"
 
@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: |
           echo "=== GITHUB_DUMP ==="
-          echo "$GITHUB_DUMP" | python -m json.tool 
+          echo "$GITHUB_DUMP" | pythonC -m json.tool 
           echo "=== END GITHUB_DUMP ==="
       
       - name: Checkout
