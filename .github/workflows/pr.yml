@@ -10,7 +10,7 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 env:
   PACKAGE: acbox
   PYTHONPATH: src
-  GITHUB_DUMP: ${{ {"ref": toJson(github).ref} }}
+  GITHUB_DUMP: ${{ toJson(github) }}
   TARGETPY: "3.13"
   TARGETOS: "ubuntu-latest"
 
