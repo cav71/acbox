@@ -10,6 +10,9 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 env:
   PACKAGE: acbox
   PYTHONPATH: src
+  GITHUB_DUMP: ${{ toJson(github) }}
+  TARGETPY: "3.13"
+  TARGETOS: "ubuntu-latest"
 
 jobs:
   build:
@@ -20,11 +23,19 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      - name: Dump ENV
+        shell: bash
+        run: |
+          echo "=== GITHUB_DUMP ==="
+          echo "$GITHUB_DUMP" | python -m json.tool 
+          echo "=== END GITHUB_DUMP ==="
+      
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
+      # https://github.com/actions/setup-python
       - name: Setup Python toolchain
         uses: actions/setup-python@v5
         with:
@@ -55,7 +66,7 @@ jobs:
             mypy src tests \
               --no-incremental --xslt-html-report $OUTDIR/mypy
 
-      - name: Run Python tests
+      - name: Run Python checks (tests)
         shell: bash
         env:
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
