@@ -11,7 +11,7 @@ env:
   PACKAGE: acbox
   PYTHONPATH: src
   #GITHUB_DUMP: ${{ toJson(github.ref) }}
-  GITHUB_DUMP: {"ref": ${{ github.ref }}}
+  GITHUB_DUMP: ${{ format('{"ref": {0}}', github.ref }}
   TARGETPY: "3.13"
   TARGETOS: "ubuntu-latest"
 
