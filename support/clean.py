@@ -5,6 +5,7 @@ from pathlib import Path
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--deep", action="store_true", help="remove all files")
     parser.add_argument("-n", "--dry-run", action="store_true")
     parser.add_argument("paths", nargs="+", type=Path)
     return parser.parse_args()
@@ -14,6 +15,8 @@ def main(options: argparse.Namespace) -> None:
     allpaths = []
     for path in options.paths:
         allpaths.extend(list(path.rglob("__pycache__")))
+        if options.deep:
+            allpaths.extend(list(path.rglob("*.egg-info")))
 
     for path in sorted(allpaths):
         if not path.is_dir():

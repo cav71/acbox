@@ -1,9 +1,9 @@
-name: Pull-Request
+name: Beta-build
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
+      - beta/*
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -13,18 +13,17 @@ env:
   #GITHUB_DUMP: ${{ toJson(github) }}
   GITHUB_DUMP: |
     {
-      "version": "v1", 
-      "name": "${{ github.event.repository.name }}",
-      "ref": "${{ github.ref }}", 
-      "sha": "${{ github.sha }}", 
-      "run_number": 
-    "${{ github.run_number }}"
+      "version":    "v1", 
+      "name":       "${{ github.event.repository.name }}",
+      "ref":        "${{ github.ref }}", 
+      "sha":        "${{ github.sha }}", 
+      "run_number": "${{ github.run_number }}"
     }
   TARGETPY: "3.13"
   TARGETOS: "ubuntu-latest"
 
 jobs:
-  prs:
+  betas:
     strategy:
       matrix:
         #os: [ubuntu-latest, macos-latest, windows-latest]
@@ -90,30 +89,39 @@ jobs:
               --cov-report=html:$OUTDIR/coverage --cov-report=xml:$OUTDIR/coverage.xml \
               --junitxml=$OUTDIR/junit/junit.xml --html=$OUTDIR/junit/junit.html --self-contained-html \
             tests
-# 
-#       # https://github.com/codecov/codecov-action
-#       - name: Upload coverage reports to Codecov
-#         uses: codecov/codecov-action@v5
-#         with:
-#           files: $OUTDIR/coverage.xml
-#           token: ${{ secrets.CODECOV_TOKEN }}
-#           verbose: true # optional (default = false)
-# 
-# #       - name: Build wheel packages
-# #         if: ${{ ! contains(matrix.os, 'windows') }}
-# #         env:
-# #           GITHUB_DUMP: ${{ toJson(github) }}
-# #         run: |
-# #           python -m build
-# #           touch .keepme
-# # 
-# #       - name: Archive artifacts
-# #         uses: actions/upload-artifact@v4
-# #         with:
-# #           name: qa-results-${{ matrix.python-version }}-${{ matrix.os }}
-# #           path: |
-# #             build/qa-${{ matrix.python-version }}-${{ matrix.os}}
-# #             dist
-# #             .keepme
-# #         # Use always() to always run this step to publish test results when there are test failures
-# #         if: always()
+
+      # https://github.com/codecov/codecov-action
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: $OUTDIR/coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true # optional (default = false)
+
+      - name: Build wheel packages
+        if: ${{ ! contains(matrix.os, 'windows') }}
+        env:
+          GITHUB_DUMP: ${{ toJson(github) }}
+        run: |
+          python ./support/builder.pyz --build pyproject.toml
+
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-results-${{ matrix.python-version }}-${{ matrix.os }}
+          path: |
+            build/qa-${{ matrix.python-version }}-${{ matrix.os}}
+            dist
+            .keepme
+        # Use always() to always run this step to publish test results when there are test failures
+        if: always()
+
+      # https://github.com/pypa/gh-action-pypi-publish
+      - name: "Publish beta package to pypi"
+        uses: pypa/gh-action-pypi-publish@release/v1
+        if: ${{ (matrix.python-version == env.TARGETPY) && (matrix.os == env.TARGETOS) }}
+        with:
+          attestations: false
+          verbose: true
+          #repository-url: https://test.pypi.org/legacy
+          password: ${{ secrets.PYPI_API_TOKEN }}

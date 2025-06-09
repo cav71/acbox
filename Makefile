@@ -4,7 +4,7 @@
 #   (to install make: pacmman -S make)
 
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
-SOURCES=release/checks-and-balances.py src tests
+SOURCES=support/checks-and-balances.py src tests
 
 export PYTHONPATH=$(ROOT_DIR)/src
 
@@ -13,6 +13,10 @@ export PYTHONPATH=$(ROOT_DIR)/src
 help: ## Display the list of available targets
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
+
+.PHONY: pack
+pack:
+	cd support && make pack
 
 .PHONY: check
 check: ## ruff check + lint
@@ -36,6 +40,6 @@ tests:  ## run all tests
 
 .PHONY: clean
 clean:  ## clean all artifacts
-	@rm -rf .dmypy.json src/acbox.egg-info dist
-	@python release/clean.py $(SOURCES)
+	@rm -rf .dmypy.json src/acbox.egg-info dist build
+	@python support/clean.py $(SOURCES)
 	@echo "🟢 cleaned"

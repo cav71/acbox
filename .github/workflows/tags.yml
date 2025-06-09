@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - v*
+
+env:
+  PACKAGE: ${{ github.event.repository.name }}
+  PYTHONPATH: src
+  GITHUB_DUMP: '{"name": "${{ github.event.repository.name }}", "ref": "${{ github.ref }}", "sha": "${{ github.sha }}", "run_number": "${{ github.run_number }}" }'
+
+jobs:
+  tags:
+    strategy:
+      matrix:
+        #os: [ubuntu-latest, macos-latest, windows-latest]
+        #python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        os: [ubuntu-latest]
+        python-version: ["3.9"]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # https://github.com/actions/checkout
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Dump ENV
+        shell: bash
+        run: |
+          echo "=== GITHUB_DUMP ==="
+          echo "$GITHUB_DUMP" | python -m json.tool 
+          echo "=== END GITHUB_DUMP ==="
+          python ./support/builder.py pyproject.toml
+

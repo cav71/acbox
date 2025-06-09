@@ -9,5 +9,5 @@ def test_load_mod(resolver):
 
 
 def test_load_remote():
-    mod = utils.loadmod("https://raw.githubusercontent.com/cav71/acbox/refs/heads/main/tests/conftest.py")
-    assert mod.annotations
+    mod = utils.loadmod("https://raw.githubusercontent.com/cav71/acbox/refs/heads/main/tests/test_utils.py")
+    assert hasattr(mod, "test_load_remote")
