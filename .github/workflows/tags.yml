@@ -10,7 +10,7 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 env:
   PACKAGE: ${{ github.event.repository.name }}
   PYTHONPATH: src
-  #GITHUB_DUMP: ${{ toJson(github) }}
+  GITHUB_DUMP: ${{ toJson(github) }}
   GITHUB_DUMP: |
     {
       "version":    "v1", 
