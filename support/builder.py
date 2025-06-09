@@ -30,6 +30,9 @@ class GData:
 
     @staticmethod
     def extract_version(gdata: GData) -> tuple[str | None, tuple[int] | None]:
+        expr = re.compile(r"^refs/heads/(?P<mode>(master|main))$")
+        if match := expr.search(gdata.ref):
+            return (match.group("mode"), None)
         expr = re.compile(r"^refs/heads/(?P<mode>(beta|release))/(?P<v>\d+([.]\d+)*)")
         if match := expr.search(gdata.ref):
             return (
@@ -192,7 +195,7 @@ def main(args):
         args.error(f"cannot find branch data '{args.main}' (did you fetch all history?)")
 
     gdata = fetch_gitub_dump(args.data)
-    gdata.build = git.commits_on_branch()
+    gdata.build = git.commits_on_branch(args.main)
 
     with contextlib.ExitStack() as stack:
         store = stack.enter_context(backups())
@@ -206,11 +209,11 @@ def main(args):
         mode = args.mode or gdata.branch
         version = {
             "beta": f"{current}b{gdata.build}",
-            "releaase": current,
-            None: None,
+            "main": current,
         }[mode]
         logger.info("using version %s [%s]", version, mode)
-        if (actual := tuple(int(c) for c in current.split("."))) != gdata.branch_version:
+
+        if gdata.branch_version and (actual := tuple(int(c) for c in current.split("."))) != gdata.branch_version:
             args.error(f"working on branch version {gdata.branch_version} but current version {actual}")
 
         if current != version:
@@ -225,6 +228,8 @@ def main(args):
             logger.info("running: python -m build .")
             if not args.dryrun:
                 __main__.main(["."])
+
+        # TODO add processing more files
         sys.exit()
 
         # inifile
