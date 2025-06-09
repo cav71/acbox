@@ -122,6 +122,4 @@ jobs:
         if: ${{ (matrix.python-version == env.TARGETPY) && (matrix.os == env.TARGETOS) }}
         with:
           attestations: false
-          verbose: true
-          #repository-url: https://test.pypi.org/legacy
           password: ${{ secrets.PYPI_API_TOKEN }}
