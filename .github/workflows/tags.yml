@@ -45,6 +45,9 @@ jobs:
           echo "=== GITHUB_DUMP ==="
           echo "$GITHUB_DUMP" | python -m json.tool 
           echo "=== END GITHUB_DUMP ==="
+          echo "=== GITHUB_DUMP_FULL ==="
+          echo "$GITHUB_DUMP_FULL" | python -m json.tool 
+          echo "=== END GITHUB_DUMP_FULL ==="
 
       # https://github.com/actions/setup-python
       - name: Setup Python toolchain
