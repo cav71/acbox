@@ -25,7 +25,7 @@ class GData:
     sha: str = ""
     run_number: int | None = None
     build: int | None = None
-    branch: str = ""
+    mode: str = ""
     branch_version: tuple[int] | None = None
 
     @staticmethod
@@ -33,6 +33,14 @@ class GData:
         expr = re.compile(r"^refs/heads/(?P<mode>(master|main))$")
         if match := expr.search(gdata.ref):
             return (match.group("mode"), None)
+
+        expr = re.compile(r"^refs/tags/v(?P<v>\d+([.]\d+)*)")
+        if match := expr.search(gdata.ref):
+            return (
+                "release",
+                tuple(int(v) for v in match.group("v").split(".")),
+            )
+
         expr = re.compile(r"^refs/heads/(?P<mode>(beta|release))/(?P<v>\d+([.]\d+)*)")
         if match := expr.search(gdata.ref):
             return (
@@ -83,9 +91,9 @@ def fetch_gitub_dump(github_dump: str) -> GData:
         gdata.run_number = int(gdata.run_number)
 
     # assign branch name and branch_version from github
-    if gdata.branch or gdata.branch_version:
+    if gdata.mode or gdata.branch_version:
         raise RuntimeError("cannot set")
-    gdata.branch, gdata.branch_version = GData.extract_version(gdata)
+    gdata.mode, gdata.branch_version = GData.extract_version(gdata)
     return gdata
 
 
@@ -206,10 +214,11 @@ def main(args):
         current = ret.group("value")
         logger.info("current version %s from %s", current, args.pyproject)
 
-        mode = args.mode or gdata.branch
+        mode = args.mode or gdata.mode
         version = {
             "beta": f"{current}b{gdata.build}",
             "main": current,
+            "release": current,
         }[mode]
         logger.info("using version %s [%s]", version, mode)
 
