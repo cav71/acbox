@@ -1,43 +1,38 @@
 from __future__ import annotations
-import sys
+
 import argparse
 import contextlib
 import functools
-import logging
 import inspect
+import logging
+import sys
 import time
 from typing import Any, Callable
 
-from .shared import ArgumentParserBase, AbortCliError, AbortWrongArgumentError
+from .parser import ArgumentParser
+from .shared import AbortCliError, AbortWrongArgumentError, ArgumentParserBase
 
 log = logging.getLogger(__name__)
+
 
 @contextlib.contextmanager
 def setup(
     function: Callable,
-    add_arguments: (
-        Callable[[ArgumentParserBase], None]
-        | Callable[[argparse.ArgumentParser], None]
-        | None
-    ) = None,
-    process_args: (
-        Callable[[argparse.Namespace], argparse.Namespace | None] | None
-    ) = None,
+    add_arguments: (Callable[[ArgumentParserBase], None] | Callable[[argparse.ArgumentParser], None] | None) = None,
+    process_args: (Callable[[argparse.Namespace], argparse.Namespace | None] | None) = None,
 ):
     sig = inspect.signature(function)
     module = inspect.getmodule(function)
 
     # the cli decorated function might have two special parameters:
     #  - args this will receive non-parsed arguments (eg from nargs="*")
-    #  - parser escape hatch to the parser object (probably never used) 
+    #  - parser escape hatch to the parser object (probably never used)
     if "args" in sig.parameters and "parser" in sig.parameters:
         raise RuntimeError(f"function '{module}.{function.__name__}' cannot take args and parser at the same time")
 
     # doc is taken from the function itself or the containing module
-    description, _, epilog = (
-        (function.__doc__ or module.__doc__ or "").strip().partition("\n")
-    )
-    epilog = f"{description}\n{'-'*len(description)}\n{epilog}"
+    description, _, epilog = (function.__doc__ or module.__doc__ or "").strip().partition("\n")
+    epilog = f"{description}\n{'-' * len(description)}\n{epilog}"
     description = ""
 
     # extract parser info/fallbacks from all these modules
@@ -62,7 +57,7 @@ def setup(
     success = "completed"
     errormsg = ""
     show_timing = True
-    #breakpoint()
+    # breakpoint()
     try:
         if "parser" not in sig.parameters:
             args = parser.parse_args()
@@ -73,7 +68,7 @@ def setup(
                 kwargs["args"] = args
         yield sig.bind(**kwargs)
 
-    except argparse.ArgumentError as exc:
+    except argparse.ArgumentError:
         sys.exit(2)
         pass
     except AbortCliError as exc:
@@ -101,14 +96,8 @@ def setup(
 
 
 def cli(
-    add_arguments: (
-        Callable[[ArgumentParserBase], Any]
-        | Callable[[argparse.ArgumentParser], Any]
-        | None
-    ) = None,
-    process_args: (
-        Callable[[argparse.Namespace], argparse.Namespace | None] | None
-    ) = None,
+    add_arguments: (Callable[[ArgumentParserBase], Any] | Callable[[argparse.ArgumentParser], Any] | None) = None,
+    process_args: (Callable[[argparse.Namespace], argparse.Namespace | None] | None) = None,
 ):
     def _cli1(function):
         module = inspect.getmodule(function)

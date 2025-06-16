@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import inspect
+from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from types import ModuleType
 from typing import Any
-from importlib.util import module_from_spec, spec_from_file_location
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
@@ -26,7 +25,9 @@ class NA:
     pass
 
 
-def diffdict(left: dict[str, Any], right: dict[str, Any], exclude: list[str] | None = None, na: str | NA = NA) -> dict[str, tuple[Any, Any]]:
+def diffdict(
+    left: dict[str, Any], right: dict[str, Any], exclude: list[str] | None = None, na: str | type[NA] = NA
+) -> dict[str, tuple[Any, Any]]:
     result = {}
     for key in sorted(set(left) | set(right)):
         if exclude and key in exclude:
@@ -36,5 +37,5 @@ def diffdict(left: dict[str, Any], right: dict[str, Any], exclude: list[str] | N
         elif key not in right:
             result[key] = (left[key], na)
         elif left[key] != right[key]:
-             result[key] = (left[key], right[key])
+            result[key] = (left[key], right[key])
     return result

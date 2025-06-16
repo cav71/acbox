@@ -74,6 +74,10 @@ class ArgumentParserBase(argparse.ArgumentParser):
             # gh-121018
             raise argparse.ArgumentError(None, message)
 
+    @classmethod
+    def get_parser(cls, modules: list[types.ModuleType], **kwargs):
+        raise NotImplementedError("implement this method")
+
 
 class ArgumentTypeBase:
     class _NA:

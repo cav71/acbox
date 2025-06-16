@@ -3,8 +3,10 @@
 #   SET PATH=%PATH%;C:\msys64\usr\bin;C:\msys64
 #   (to install make: pacmman -S make)
 
+PROJECT = acbox
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
-SOURCES=support/checks-and-balances.py src tests
+SOURCES := support/checks-and-balances.py src tests
+BUILDDIR := build
 
 export PYTHONPATH=$(ROOT_DIR)/src
 
@@ -38,8 +40,18 @@ lint:  ## run the linter (mypy) and report errors.
 tests:  ## run all tests
 	pytest -vvs tests
 
+
+.PHONY: coverage
+coverage:  ## run all tests with coverage
+	mkdir -p $(BUILDDIR)
+	pytest -vvs \
+        --cov=$(PROJECT) \
+        --cov-report=html:$(BUILDDIR)/coverage --cov-report=term \
+        --html=$(BUILDDIR)/junit.html --self-contained-html \
+        tests
+
 .PHONY: clean
 clean:  ## clean all artifacts
-	@rm -rf .dmypy.json src/acbox.egg-info dist build
+	@rm -rf .dmypy.json src/acbox.egg-info dist $(BUILDDIR)
 	@python support/clean.py $(SOURCES)
 	@echo "🟢 cleaned"
