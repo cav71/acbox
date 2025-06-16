@@ -14,6 +14,18 @@ else:
     ArgsCallback = Callable
 
 
+class CliBaseError(Exception):
+    pass
+
+
+class AbortCliError(CliBaseError):
+    pass
+
+
+class AbortWrongArgumentError(CliBaseError):
+    pass
+
+
 def check_default_constructor(klass: type):
     signature = inspect.signature(klass.__init__)  # type: ignore[misc]
     for name, value in signature.parameters.items():
