@@ -3,9 +3,11 @@ import argparse
 import pytest
 
 from acbox.cli import shared
+from acbox.cli.flags.base import ArgumentTypeBase
+from acbox.cli.parsers.base import ArgumentParserBase
 
 
-class Flag(shared.ArgumentTypeBase):
+class Flag(ArgumentTypeBase):
     def __init__(self, only_odd=False):
         self.only_odd = only_odd
         super().__init__()
@@ -36,7 +38,7 @@ def test_check_default_constructor():
 
 def test_add_argument():
     """test all failures mode for add_argument default"""
-    p = shared.ArgumentParserBase([], exit_on_error=False)
+    p = ArgumentParserBase([], exit_on_error=False)
 
     with pytest.raises(ValueError) as e:
         p.add_argument("--flag", type=Flag, default="yyy")
@@ -59,21 +61,21 @@ def test_add_argument():
     assert e.value.args[0] == "cannot use value='126' as default: non odd value '126'"
 
     p.add_argument("--flag", type=Flag)
-    assert len(action := [a for a in p._actions if isinstance(a.type, shared.ArgumentTypeBase)]) == 1
-    assert action[0].default.default is shared.ArgumentTypeBase._NA
+    assert len(action := [a for a in p._actions if isinstance(a.type, ArgumentTypeBase)]) == 1
+    assert action[0].default.default is ArgumentTypeBase._NA
 
     p.add_argument("--flag1", type=Flag, default="124")
-    assert len(actions := [a for a in p._actions if isinstance(a.type, shared.ArgumentTypeBase)]) == 2
+    assert len(actions := [a for a in p._actions if isinstance(a.type, ArgumentTypeBase)]) == 2
     assert actions[1].default.default == 124
 
     p.add_argument("--flag2", type=Flag, default=126)
-    assert len(actions := [a for a in p._actions if isinstance(a.type, shared.ArgumentTypeBase)]) == 3
+    assert len(actions := [a for a in p._actions if isinstance(a.type, ArgumentTypeBase)]) == 3
     assert actions[2].default.default == 126
 
 
 def test_special_flag_no_restriction():
     """parse arguments with no default and no constrain on Flag"""
-    p = shared.ArgumentParserBase([], exit_on_error=False)
+    p = ArgumentParserBase([], exit_on_error=False)
     p.add_argument("--flag", type=Flag)
 
     a = p.parse_args([])
@@ -100,7 +102,7 @@ def test_special_flag_no_restriction():
     assert e.value.args[-1] == "invalid Flag value: 'boo'"
 
     # same as above but with a default fallback
-    p = shared.ArgumentParserBase([], exit_on_error=False)
+    p = ArgumentParserBase([], exit_on_error=False)
     p.add_argument("--flag", type=Flag, default="42")
 
     a = p.parse_args([])
@@ -128,7 +130,7 @@ def test_special_flag_no_restriction():
 
 
 def test_special_flag_with_restriction_no_default():
-    p = shared.ArgumentParserBase([], exit_on_error=False)
+    p = ArgumentParserBase([], exit_on_error=False)
     p.add_argument("--flag", type=Flag(only_odd=True))
 
     a = p.parse_args([])
@@ -151,7 +153,7 @@ def test_special_flag_with_restriction_no_default():
     assert e.value.args[-1] == "invalid Flag value: 'boo'"
 
     # same as above but with a default fallback
-    p = shared.ArgumentParserBase([], exit_on_error=False)
+    p = ArgumentParserBase([], exit_on_error=False)
     p.add_argument("--flag", type=Flag(only_odd=True), default=43)
 
     a = p.parse_args([])

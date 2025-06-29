@@ -1,5 +1,12 @@
 #!/usr/bin/env python
-# ./support/builder.py src/acbox/version.py --data support/data/beta.full.json -n
+# build a versioned python wheel!
+#  1. get base version from a "version.py" file (eg. 1.0.0)
+#  2. computes the actual version depending if on a "beta" or "hotfix" branch
+#      - for commits under beta/1.0.0 that'd be 1.0.0bN
+#      - for commits under release/1.0.0 that'd be 1.0.0.postN
+# if version.py contains __version__ = "1.0.0"
+# ./support/builder.py src/acbox/version.py
+#   --data support/data/beta.full.json -n
 from __future__ import annotations
 
 import argparse

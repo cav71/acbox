@@ -1,11 +1,9 @@
-from __future__ import annotations
-
 import argparse
-import logging.handlers
+import logging
 import sys
 import types
 
-from .shared import ArgumentParserBase
+from .base import ArgumentParserBase
 
 log = logging.getLogger(__name__)
 

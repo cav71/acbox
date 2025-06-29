@@ -9,8 +9,9 @@ import sys
 import time
 from typing import Any, Callable
 
-from .parser import ArgumentParser
-from .shared import AbortCliError, AbortWrongArgumentError, ArgumentParserBase
+from .parsers.base import ArgumentParserBase
+from .parsers.simple import ArgumentParser
+from .shared import AbortCliError, AbortWrongArgumentError
 
 log = logging.getLogger(__name__)
 
