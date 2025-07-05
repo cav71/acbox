@@ -13,6 +13,23 @@ class ArgumentParserBase(argparse.ArgumentParser):
         self.modules = modules
         self.callbacks: list[ArgsCallback | None] = []
 
+    def _post_process(self, options):
+        for name in dir(options):
+            if isinstance(getattr(options, name), ArgumentTypeBase):
+                fallback = getattr(options, name).value
+                setattr(
+                    options,
+                    name,
+                    None if fallback is ArgumentTypeBase._NA else fallback,
+                )
+        for callback in self.callbacks:
+            options = callback(options) or options
+        return options
+
+    def parse_known_args(self, args=None, namespace=None):
+        options, argv = super().parse_known_args(args, namespace)
+        return self._post_process(options), argv
+
     def parse_args(self, args=None, namespace=None):
         options = super().parse_args(args, namespace)
         for name in dir(options):
