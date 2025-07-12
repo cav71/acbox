@@ -4,7 +4,7 @@ repos:
       - id: echo
         name: echo
         description: "demo hook"
-        entry: echo
+        entry: ./hello.sh
         language: system
         types_or: [python, pyi]
         args: []
