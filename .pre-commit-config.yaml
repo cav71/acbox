@@ -7,7 +7,7 @@ repos:
         entry: ruff check --force-exclude
         language: system
         types_or: [python, pyi]
-        args: []
+        #args: []
         require_serial: true
         additional_dependencies: []
 
@@ -17,7 +17,7 @@ repos:
         entry: ruff format --force-exclude
         language: system
         types_or: [python, pyi]
-        args: []
+        #args: []
         require_serial: true
         additional_dependencies: []
 
@@ -29,7 +29,7 @@ repos:
         pass_filenames: false
         language: system
         types_or: [python, pyi]
-        args: ["src",]
+        #args: ["src",]
         require_serial: true
         additional_dependencies: []
         minimum_pre_commit_version: '2.9.2'
