@@ -25,7 +25,10 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
 ]
 
-dependencies = []
+dependencies = [
+    "rich",
+    "click",
+]
 
 [dependency-groups]
 dev = [
@@ -49,6 +52,9 @@ extra = []
 Source = "https://github.com/cav71/acbox"
 Issues = "https://github.com/cav71/acbox"
 Documentation = "https://github.com/cav71/acbox"
+
+[project.scripts]
+acbox = "acbox.maincli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
