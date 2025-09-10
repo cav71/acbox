@@ -1,23 +1,20 @@
 #!/usr/bin/env python
-import os
-from pathlib import Path
-import contextlib
 import argparse
-import shutil
+import contextlib
 import logging
-import tarfile
-from zipfile import ZipFile, ZIP_DEFLATED 
-
+import os
+import shutil
+from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile
 
 DEPS = {
     # uv tree --package rich
     "rich": [
         "markdown-it-py",
-        "mdurl", 
+        "mdurl",
         "pygments",
     ],
-
-} 
+}
 MAPPER = {
     "markdown-it-py": "markdown_it",
 }
@@ -26,7 +23,7 @@ MAPPER = {
 log = logging.getLogger(__name__)
 
 
-def parse_args() -> None:
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
 
     group = parser.add_argument_group("logging", "logging control")
@@ -40,18 +37,15 @@ def parse_args() -> None:
     parser.add_argument("script", type=Path)
     parser.add_argument("dependencies", nargs="*")
 
-
     args = parser.parse_args()
     args.error = parser.error
 
     level = min(max(sum(args.level or [0]), -1), 1)
-    logging.basicConfig(
-        level={-1: logging.WARNING, 0: logging.INFO, 1: logging.DEBUG}[level]
-    )
+    logging.basicConfig(level={-1: logging.WARNING, 0: logging.INFO, 1: logging.DEBUG}[level])
     return args
 
 
-def add_dir(zfp, path: Path):
+def add_dir(zfp: ZipFile, path: Path) -> None:
     for root, dirs, files in os.walk(path):
         todrop = set()
         for i, d in enumerate(dirs):
@@ -64,10 +58,10 @@ def add_dir(zfp, path: Path):
             zfp.write(Path(root) / file, str(base / file))
 
 
-def find_wheel(path: Path) -> Path:
+def find_wheels(path: Path) -> list[Path]:
     if not path.is_dir():
         log.debug("looking at (possibly) a wheel file in %s", path)
-        return path
+        return [path]
     candidates = list(path.glob("*.whl"))
     log.debug("scanning for wheels in %s, found: %s", path, candidates)
     return candidates
@@ -83,16 +77,14 @@ def get_dependencies(zfp: ZipFile) -> list[str]:
     name = [name for name in zfp.namelist() if name.endswith("/METADATA")][0]
     with zfp.open(name) as myfile:
         dependencies = [
-            line.split(":")[1].strip()
-            for line in myfile.read().decode("utf-8").split("\n")
-            if line.startswith("Requires-Dist:")
+            line.split(":")[1].strip() for line in myfile.read().decode("utf-8").split("\n") if line.startswith("Requires-Dist:")
         ]
     return dependencies
 
 
 def main(args: argparse.Namespace) -> None:
-    if len(wheels := find_wheel(args.script)) != 1:
-        args.error(f"found {'too many' if len(weels) else 'no'} whl files in {args.script}")
+    if len(wheels := find_wheels(args.script)) != 1:
+        args.error(f"found {'too many' if len(wheels) else 'no'} whl files in {args.script}")
     wheel = wheels[0]
     log.info("processing wheel file %s", wheel)
 
@@ -103,7 +95,7 @@ def main(args: argparse.Namespace) -> None:
         output.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(wheel, output)
     log.info("output file in %s%s", output, " (in-place)" if args.inplace else "")
-        
+
     with generate(output) as zfp:
         dependencies = get_dependencies(zfp)
         log.info("using dependencies: %s", dependencies)
@@ -115,9 +107,9 @@ def main(args: argparse.Namespace) -> None:
                 all_deps.update(extra)
                 log.debug("as subdependency of %s, added: %s", dep, extra)
 
-        for dep in sorted(all_deps):
+        for dep in sorted(all_deps | set(args.dependencies)):
             mod = __import__(MAPPER.get(dep, dep))
-            path = Path(mod.__file__)
+            path = Path(str(mod.__file__))
             if path.name == "__init__.py":
                 add_dir(zfp, path.parent)
             else:
