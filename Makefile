@@ -19,7 +19,7 @@ help: ## Display the list of available targets
 .PHONY: pack
 pack:  ## create self standing package
 	python -m build .
-	./support/packer.py -v dist
+	./support/packer.py -vi dist
 
 .PHONY: check
 check: ## ruff check + lint
