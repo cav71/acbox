@@ -4,31 +4,31 @@ repos:
       - id: ruff
         name: ruff-check
         description: "Run 'ruff' for extremely fast Python linting"
-        entry: ruff check --force-exclude
         language: system
+        entry: ruff check --force-exclude
         types_or: [python, pyi]
-        args: []
-        require_serial: true
-        additional_dependencies: []
+        #args: []
+        #require_serial: true
+        #additional_dependencies: []
       
       - id: ruff-format
         name: ruff-format
         description: "Run 'ruff format' for extremely fast Python formatting"
-        entry: ruff format --force-exclude
         language: system
+        entry: ruff format --force-exclude
         types_or: [python, pyi]
-        args: []
-        require_serial: true
-        additional_dependencies: []
+        #args: []
+        #require_serial: true
+        #additional_dependencies: []
       
       - id: mypy
         name: mypy
         description: "Run mypy"
-        entry: mypy
-        pass_filenames: false
         language: system
+        entry: mypy
         types_or: [python, pyi]
-        args: []
-        require_serial: true
-        additional_dependencies: []
-        minimum_pre_commit_version: '2.9.2'
+        #args: []
+        #pass_filenames: true
+        #require_serial: true
+        #additional_dependencies: []
+        #minimum_pre_commit_version: '2.9.2'

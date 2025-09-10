@@ -1,7 +1,7 @@
-import itertools
-import functools
 import dataclasses as dc
-from enum import auto, IntEnum
+import functools
+import itertools
+from enum import IntEnum, auto
 
 
 class S(IntEnum):
@@ -33,14 +33,14 @@ class ColorText:
             S.WARN: f"\033[43;30m{message}{reset}",
             S.NOSTATUS: f"{message}",
         }[self.status]
-        return msg + ' '*(int(width or len(self.message)) - len(self.message))
+        return msg + " " * (int(width or len(self.message)) - len(self.message))
 
 
 def indent(txt: str, pre: str, first: str | None = None) -> str:
     return (pre if first is None else first) + txt.replace("\n", "\n" + pre)
 
 
-def dumps(report: list[Record], sorted_groups: bool=True) -> str:
+def dumps(report: list[Record], sorted_groups: bool = True) -> str:
     def resolve(states):
         if S.FAILED in states:
             status = S.FAILED
@@ -49,11 +49,10 @@ def dumps(report: list[Record], sorted_groups: bool=True) -> str:
         elif S.OK in states:
             status = S.OK
         else:
-            status = S.NOSTATUS 
+            status = S.NOSTATUS
         return status
-        
 
-    def color(status: S, fall=".") -> str:
+    def color(status: S, fall=".") -> ColorText:
         message = {
             S.OK: "+",
             S.FAILED: "x",
@@ -62,10 +61,10 @@ def dumps(report: list[Record], sorted_groups: bool=True) -> str:
         }[status]
         return ColorText(message, status)
 
-    def colorize(message: str, status: S) -> str:
+    def colorize(message: str, status: S) -> ColorText:
         return ColorText(message, status)
 
-    pre = " "*3
+    pre = " " * 3
     result = []
 
     width = max(len(record.key) for record in report)
@@ -80,19 +79,22 @@ def dumps(report: list[Record], sorted_groups: bool=True) -> str:
         records = list(itrecords)
         status = resolve(set(record.status for record in records))
         result.append(f"{color(status)} {group}")
-        start = " "*4 + " "*width
+        start = " " * 4 + " " * width
         for record in records:
             if record.group != group:
                 continue
-            report = record.report
-            if isinstance(report, list):
-                report = indent("\n".join(report), pre=start).lstrip()
-            result.append(f"{pre}{colorize(record.key, record.status):{width}} {report}")
+            if isinstance(record.report, str):
+                message = record.report
+            elif isinstance(record.report, list):
+                message = indent("\n".join(record.report), pre=start).lstrip()
+            else:
+                raise RuntimeError("unable to handle type", type(record.report))
+            result.append(f"{pre}{colorize(record.key, record.status):{width}} {message}")
 
     return "\n".join(result)
 
 
-def print_report(report: list[Record], sorted_groups: bool=True) -> int:
+def print_report(report: list[Record], sorted_groups: bool = True) -> int:
     errors = sum(r.status == S.FAILED for r in report)
     warnings = sum(r.status == S.WARN for r in report)
     print(dumps(report, sorted_groups))
@@ -113,6 +115,7 @@ def check(fn):
     def _fn(*args, **kwargs):
         result = fn(*args, **kwargs)
         return result if isinstance(result, list) else [result]
+
     return _fn
 
 
