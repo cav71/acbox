@@ -1,7 +1,11 @@
+import contextlib
 import dataclasses as dc
+import logging
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -13,6 +17,8 @@ COLORS = {
     "red": "\033[91m",
     "clear": "\033[0m",
 }
+
+logger = logging.getLogger(__name__)
 
 
 @dc.dataclass
@@ -130,6 +136,19 @@ class Runner:
     verbose: bool
     workdir: Path | None = None
     exe: Paths | None = None
+    dryrun: bool | None = None
+    log: logging.Logger | None = None
+
+    @staticmethod
+    @contextlib.contextmanager
+    def tmpdir(source: Path | None):
+        wdir = source if source else Path(tempfile.mkdtemp())
+        wdir.mkdir(parents=True, exist_ok=True)
+        try:
+            yield wdir
+        finally:
+            if not source:
+                shutil.rmtree(wdir, ignore_errors=True)
 
     def __call__(
         self,
@@ -137,11 +156,13 @@ class Runner:
         capture: bool = False,
         verbose: bool | None = None,
         workdir: Path | str | bool | None = None,
+        dryrun: bool | None = None,
+        log: logging.Logger | None = None,
     ):
         display: EMode = "display" if self.verbose else "null"
+        dryrun = self.dryrun if dryrun is None else dryrun
+        log = log or self.log or logger
 
-        # workdir: Path | str | bool | None = None
-        # self.workdir: Path | None
         cwd: Path | None = None
         if workdir:  # Path, str, True
             cwd = self.workdir if (workdir is True) else Path(workdir)
@@ -168,6 +189,8 @@ class Runner:
             variables = {"workdir": cwd}
             fullargs = [*mkpaths(self.exe), *fullargs]
             fullargs = [a.format(**variables) for a in fullargs]
+
+        log.debug("%srun: %s", "(dry-run) " if dryrun else "", " ".join(fullargs))
         return runc(fullargs, stdout=mode, stderr=display, cwd=cwd)
 
 

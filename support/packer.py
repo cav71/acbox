@@ -55,6 +55,9 @@ def add_dir(zfp: ZipFile, path: Path) -> None:
             del dirs[i]
         base = Path(root).relative_to(path.parent)
         for file in files:
+            if ".so" in file:
+                log.warning("skipping binary file %s", file)
+                continue
             zfp.write(Path(root) / file, str(base / file))
 
 

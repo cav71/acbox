@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import contextlib
 import os
+import shutil
+import tempfile
 from pathlib import Path
+from typing import Generator
 
 
 def which_n(exe: str | Path) -> list[Path] | None:
@@ -22,3 +26,14 @@ def which(exe: str | Path) -> Path | None:
     if candidates is None:
         return None
     return candidates[0]
+
+
+@contextlib.contextmanager
+def tmpdir(source: Path | None) -> Generator[Path, None, None]:
+    wdir = source if source else Path(tempfile.mkdtemp())
+    wdir.mkdir(parents=True, exist_ok=True)
+    try:
+        yield wdir
+    finally:
+        if not source:
+            shutil.rmtree(wdir, ignore_errors=True)

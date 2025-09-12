@@ -26,8 +26,10 @@ classifiers = [
 ]
 
 dependencies = [
-    "rich",
     "click",
+    "filetype",
+    "rich",
+    "pyyaml",
 ]
 
 [dependency-groups]
@@ -42,6 +44,7 @@ dev = [
     "pytest-html",
     "ruff",
     "types-python-dateutil",
+    "types-pyyaml"
 ]
 
 

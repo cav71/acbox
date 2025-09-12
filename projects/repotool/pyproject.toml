@@ -1,0 +1,13 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "repotool"
+version = "0.0.0"
+requires-python = ">= 3.9"
+
+dependencies = [
+    "rich",
+    "click",
+]
