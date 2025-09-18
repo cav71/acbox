@@ -159,9 +159,9 @@ class Runner:
         dryrun: bool | None = None,
         log: logging.Logger | None = None,
     ):
-        display: EMode = "display" if self.verbose else "null"
-        dryrun = self.dryrun if dryrun is None else dryrun
         log = log or self.log or logger
+        dryrun = self.dryrun if dryrun is None else dryrun
+        display: EMode = "display" if self.verbose else "null"
 
         cwd: Path | None = None
         if workdir:  # Path, str, True
@@ -184,6 +184,8 @@ class Runner:
             mode = "null"
         else:
             raise RuntimeError(f"un-handled value {check=}")
+        if "capture" in mode and dryrun:
+            raise RuntimeError("cannot dryrun and caputure")
         fullargs = mkpaths(args)
         if self.exe:
             variables = {"workdir": cwd}
