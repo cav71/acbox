@@ -21,6 +21,10 @@ COLORS = {
 logger = logging.getLogger(__name__)
 
 
+class RunnerError(Exception):
+    pass
+
+
 @dc.dataclass
 class BaseFilter:
     def __call__(self, stream: BinaryIO) -> None:
@@ -127,16 +131,18 @@ def runc(
         ethread.join()
 
     if process.returncode:
-        raise RuntimeError(f"failed to execute: '{' '.join(mkpaths(args))}'")
+        envs = " ".join(f'{k}="{v}"' for k, v in (overrides or {}).items())
+        cmdline = subprocess.list2cmdline(mkpaths(args))
+        raise RunnerError(f"failed to execute in cwd={kwargs['cwd']} ==> {envs} {cmdline}")
     return ofiltermap.result if hasattr(ofiltermap, "result") else None
 
 
 @dc.dataclass
 class Runner:
     verbose: bool
-    workdir: Path | None = None
-    exe: Paths | None = None
     dryrun: bool | None = None
+    exe: Paths | None = None
+    cwd: Path | None = None
     log: logging.Logger | None = None
 
     @staticmethod
@@ -155,22 +161,14 @@ class Runner:
         args: Paths,
         capture: bool = False,
         verbose: bool | None = None,
-        workdir: Path | str | bool | None = None,
         dryrun: bool | None = None,
+        cwd: Path | str | bool | None = None,
         log: logging.Logger | None = None,
     ):
         log = log or self.log or logger
         dryrun = self.dryrun if dryrun is None else dryrun
+        cwd = cwd or self.cwd
         display: EMode = "display" if self.verbose else "null"
-
-        cwd: Path | None = None
-        if workdir:  # Path, str, True
-            cwd = self.workdir if (workdir is True) else Path(workdir)
-        else:  # "", False, None
-            if workdir is False:
-                cwd = None
-            else:
-                cwd = self.workdir
 
         check = (capture, self.verbose if verbose is None else verbose)
         mode: OMode = "null"
@@ -188,7 +186,7 @@ class Runner:
             raise RuntimeError("cannot dryrun and caputure")
         fullargs = mkpaths(args)
         if self.exe:
-            variables = {"workdir": cwd}
+            variables = {"cwd": cwd}
             fullargs = [*mkpaths(self.exe), *fullargs]
             fullargs = [a.format(**variables) for a in fullargs]
 
@@ -205,5 +203,5 @@ if __name__ == "__main__":
     print(y)
 
     # --git-dir=$dest/.git --work-tree $dest
-    runner = Runner(True, exe=["git", "--git-dir", "{workdir}/.git"], workdir=Path.cwd())
+    runner = Runner(True, exe=["git", "--git-dir", "{workdir}/.git"])
     runner("status")
