@@ -2,8 +2,6 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#   "pydantic",
-#   "rich",
 #   "click",
 # ]
 # ///
@@ -12,12 +10,12 @@ from __future__ import annotations
 import subprocess
 import sys
 
-import pydantic
+import acbox
 
 if __name__ == "__main__":
     print(sys.executable)
     print(subprocess.check_output([sys.executable, "-V"], encoding="utf-8").strip())
-    print(pydantic)
+    print(acbox)
     sys.exit()
 
 # build a versioned python wheel!
