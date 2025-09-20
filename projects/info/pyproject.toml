@@ -3,7 +3,7 @@ requires = ["hatchling >= 1.26"]
 build-backend = "hatchling.build"
 
 [project]
-name = "info"
+name = "acbox-info"
 version = "0.0.0"
 requires-python = ">= 3.9"
 
@@ -11,3 +11,14 @@ dependencies = [
     "rich",
     "click",
 ]
+
+[project.scripts]
+acbox-info = "info:main"
+
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "info.py"
+]
+
+
