@@ -58,7 +58,7 @@ jobs:
 
       - name: Verify tooling
         run: |
-            uv run support/builder.py
+            uv run --no-build support/builder.py
 
       - name: Python dependencies
         shell: bash
