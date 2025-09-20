@@ -47,8 +47,8 @@ jobs:
           echo "=== END GITHUB_DUMP ==="
 
       # https://github.com/actions/setup-python
-      - name: Setup Python toolchain
-        uses: actions/setup-python@v5
+      - name: Setup Python toolchain for ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
