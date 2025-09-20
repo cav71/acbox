@@ -10,8 +10,6 @@ def test_stderr_stdout(resolver):
 
     runc = runner.Runner(verbose=False)
     out = runc([sys.executable, exe], capture=True)
-    if sys.platform != "win32":
-        out = out.replace("\r", "")
 
     assert (
         out
@@ -23,7 +21,7 @@ line (out) 4
 line (out) 5
 line (out) 7
 line (out) 8
-""".strip()
+""".strip().replace("\r", "")
     )
 
     out = runc([sys.executable, exe], overrides={"HELLO": "123"}, capture=True)
@@ -37,5 +35,5 @@ line (out) 4
 line (out) 5
 line (out) 7
 line (out) 8
-""".strip()
+""".strip().replace("\r", "")
     )
