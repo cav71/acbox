@@ -42,7 +42,7 @@ class Runner:
         cwd: Path | str | bool | None = None,
         overrides: dict[str, str] | None = None,
         log: logging.Logger | None = None,
-    ):
+    ) -> str | bytes | None:
         # capture/verbose are interacting to control how the stdout is handled
         check = (capture, self.verbose if verbose is None else verbose)
         stdout: OMode = "null"

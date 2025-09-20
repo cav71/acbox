@@ -10,6 +10,8 @@ def test_stderr_stdout(resolver):
 
     runc = runner.Runner(verbose=False)
     out = runc([sys.executable, exe], capture=True)
+    if sys.platform != "win32":
+        out = out.replace("\r", "")
 
     assert (
         out
