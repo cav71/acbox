@@ -12,7 +12,7 @@ def test_stderr_stdout(resolver):
     out = runc([sys.executable, exe], capture=True)
 
     assert (
-        out
+        out.strip().replace("\r", "")
         == """
 HELLO=N/A
 line (out) 1
@@ -26,7 +26,7 @@ line (out) 8
 
     out = runc([sys.executable, exe], overrides={"HELLO": "123"}, capture=True)
     assert (
-        out
+        out.strip().replace("\r", "")
         == """
 HELLO=123
 line (out) 1
