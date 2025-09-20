@@ -1,3 +1,10 @@
+# /// script
+# dependencies = [
+# "rich",
+# "click",
+# ]
+# ///
+
 import click
 import rich
 
