@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import contextlib
 import dataclasses as dc
 import logging
 import os
-import shutil
 import subprocess
 import sys
-import tempfile
 import threading
 import time
 from pathlib import Path
@@ -32,6 +29,11 @@ class BaseFilter:
     def __call__(self, stream: BinaryIO) -> None:
         for line in iter(stream.readline, b""):
             pass
+
+
+OMode = Literal["capture", "null", "display", "capture+display"] | BaseFilter
+EMode = Literal["null", "display"] | BaseFilter
+Paths = str | Path | Sequence[str | Path]
 
 
 @dc.dataclass
@@ -75,11 +77,6 @@ class DisplayFilter(BaseFilter):
         stream.close()
         if self.capture:
             self.result = b"\n".join(result).decode(self.encode) if self.encode else b"\n".join(result)
-
-
-OMode = Literal["capture", "null", "display", "capture+display"] | BaseFilter
-EMode = Literal["null", "display"] | BaseFilter
-Paths = str | Path | Sequence[str | Path]
 
 
 def mkpaths(args: Paths) -> list[str]:
@@ -139,71 +136,6 @@ def runc(
     return ofiltermap.result if hasattr(ofiltermap, "result") else None
 
 
-@dc.dataclass
-class Runner:
-    verbose: bool
-    dryrun: bool | None = None
-    exe: Paths | None = None
-    cwd: Path | None = None
-    log: logging.Logger | None = None
-
-    @staticmethod
-    @contextlib.contextmanager
-    def tmpdir(source: Path | None):
-        wdir = source if source else Path(tempfile.mkdtemp())
-        wdir.mkdir(parents=True, exist_ok=True)
-        try:
-            yield wdir
-        finally:
-            if not source:
-                shutil.rmtree(wdir, ignore_errors=True)
-
-    def __call__(
-        self,
-        args: Paths,
-        capture: bool = False,
-        verbose: bool | None = None,
-        dryrun: bool | None = None,
-        cwd: Path | str | bool | None = None,
-        log: logging.Logger | None = None,
-    ):
-        log = log or self.log or logger
-        dryrun = self.dryrun if dryrun is None else dryrun
-        cwd = cwd or self.cwd
-        display: EMode = "display" if self.verbose else "null"
-
-        check = (capture, self.verbose if verbose is None else verbose)
-        mode: OMode = "null"
-        if check == (True, False):
-            mode = "capture"
-        elif check == (True, True):
-            mode = "capture+display"
-        elif check == (False, True):
-            mode = "display"
-        elif check == (False, False):
-            mode = "null"
-        else:
-            raise RuntimeError(f"un-handled value {check=}")
-        if "capture" in mode and dryrun:
-            raise RuntimeError("cannot dryrun and caputure")
-        fullargs = mkpaths(args)
-        if self.exe:
-            variables = {"cwd": cwd}
-            fullargs = [*mkpaths(self.exe), *fullargs]
-            fullargs = [a.format(**variables) for a in fullargs]
-
-        log.debug("%srun: %s", "(dry-run) " if dryrun else "", " ".join(fullargs))
-        return runc(fullargs, stdout=mode, stderr=display, cwd=cwd)
-
-
 if __name__ == "__main__":
     x = runc(["ls", "-l"], "capture", "display")
     print(x)
-
-    runner = Runner(True)
-    y = runner(["ls", "-l"], capture=False, verbose=True)
-    print(y)
-
-    # --git-dir=$dest/.git --work-tree $dest
-    runner = Runner(True, exe=["git", "--git-dir", "{workdir}/.git"])
-    runner("status")

@@ -7,7 +7,10 @@ from acbox import runner
 
 def test_stderr_stdout(resolver):
     exe = resolver.lookup("test-script.py")
-    out, err = runner.runc([sys.executable, exe])
+
+    runc = runner.Runner(verbose=False)
+    out = runc([sys.executable, exe], capture=True)
+
     assert (
         out
         == """
@@ -18,19 +21,10 @@ line (out) 4
 line (out) 5
 line (out) 7
 line (out) 8
-""".lstrip()
-    )
-    assert (
-        err
-        == """
-line (err) 0
-line (err) 3
-line (err) 6
-line (err) 9
-""".lstrip()
+""".strip()
     )
 
-    out, err = runner.runc([sys.executable, exe], overrdides={"HELLO": "123"})
+    out = runc([sys.executable, exe], overrides={"HELLO": "123"}, capture=True)
     assert (
         out
         == """
@@ -41,5 +35,5 @@ line (out) 4
 line (out) 5
 line (out) 7
 line (out) 8
-""".lstrip()
+""".strip()
     )
