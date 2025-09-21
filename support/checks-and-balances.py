@@ -3,9 +3,11 @@
 
 from __future__ import annotations
 
+import os
 import platform
 import shutil
 import sys
+from pathlib import Path
 
 from acbox.ureporting import Record, S, check, print_report
 
@@ -90,6 +92,7 @@ def system():
 def executables():
     result = []
     exes = [
+        "git",
         "python",
         "python3",
         "ruff",
@@ -100,14 +103,27 @@ def executables():
     ]
     for exe in exes:
         found = shutil.which(exe)
-        result.append(Record(S.NOSTATUS, "executable", exe, f"found {found}" if found else "not-found"))
+        message = f"found {found}" if found else "not-found"
+        result.append(Record(S.NOSTATUS, "executable", exe, message))
+
+    for exe in ["python", "python3", "pip", "pip3"]:
+        vexe = Path(".venv") / "bin" / exe
+        found = vexe.exists()
+        message = f"found {found}" if found else "not-found"
+        result.append(Record(S.NOSTATUS, "executable", str(vexe), message))
     return result
+
+
+@check
+def env_variables():
+    return Record(S.NOSTATUS, "environ", "PATH", os.environ["PATH"].split(os.pathsep))
 
 
 def main() -> int:
     report = []
     report.extend(system())
     report.extend(executables())
+    report.extend(env_variables())
     ret = print_report(report)
     print(f"Final status -> {ret}")
     return ret
