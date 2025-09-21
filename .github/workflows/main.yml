@@ -31,6 +31,8 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      env:
+        PATH: .venv/bin:$PATH
       # https://github.com/actions/checkout
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,8 +66,6 @@ jobs:
 
       - name: X
         shell: bash
-        env:
-          PATH: .venv/bin:$PATH
         run: |
           python3 -c "import shutil, sys; print('\n'.join(f'{a} - {shutil.which(a)}' for a in sys.argv[1:]))" python ruff
           echo "got [$PATH]"
