@@ -42,7 +42,7 @@ jobs:
       - name: X
         shell: bash
         run: |
-          echo "got [${{ env.workspace }}]"
+          echo "got [${{ gitgub.workspace }}]"
           exit 1
 
       - name: Dump ENV
