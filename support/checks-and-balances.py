@@ -97,6 +97,7 @@ def executables():
         "python3",
         "ruff",
         "mypy",
+        "pytest",
         "uv",
         "pip",
         "pip3",
