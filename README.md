@@ -2,6 +2,9 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/acbox.svg?color=blue)](https://pypi.org/project/acbox)
 [![Python versions](https://img.shields.io/pypi/pyversions/acbox.svg)](https://pypi.org/project/acbox)
+[![Codecov (main)](https://img.shields.io/codecov/c/github/cav71/acbox/main)](https://app.codecov.io/gh/cav71/acbox/tree/main)
+
+
 [![License - MIT](https://img.shields.io/badge/license-MIT-9400d3.svg)](https://spdx.org/licenses/)
 
 [![Build](https://github.com/cav71/acbox/actions/workflows/main.yml/badge.svg)](https://github.com/cav71/acbox/actions/workflows/main.yml)
