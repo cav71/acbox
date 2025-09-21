@@ -103,8 +103,8 @@ def main(args: Namespace) -> None:
 
     # release only from a tag
     if args.release:
-        if not args.github["ref"].startswith("refs/tags/v"):
-            raise click.UsageError(f"cannot release, current ref in github is {args.github['ref']}")
+        if f"refs/tags/v{version}" != args.github["ref"]:
+            raise click.UsageError(f"cannot release {version=}, current ref in github is {args.github['ref']}")
         newversion = version
     elif args.beta:
         count = gitx.commits_on_branch(f"origin/{default_branch}")

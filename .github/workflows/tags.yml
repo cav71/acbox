@@ -1,4 +1,4 @@
-name: Release
+name: Release-build
 
 on:
   push:
@@ -22,6 +22,7 @@ env:
   TARGETPY: "3.13"
   TARGETOS: "ubuntu-latest"
 
+
 jobs:
   tags:
     strategy:
@@ -39,36 +40,31 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Dump ENV
-        shell: bash
-        run: |
-          echo "=== GITHUB_DUMP ==="
-          echo "$GITHUB_DUMP" | python -m json.tool 
-          echo "=== END GITHUB_DUMP ==="
-          echo "=== GITHUB_DUMP_FULL ==="
-          echo "$GITHUB_DUMP_FULL" | python -m json.tool 
-          echo "=== END GITHUB_DUMP_FULL ==="
-
       # https://github.com/actions/setup-python
-      - name: Setup Python toolchain
-        uses: actions/setup-python@v5
+      - name: Setup Python toolchain for ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+
+      # https://github.com/astral-sh/setup-uv
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
 
       - name: Python dependencies
         shell: bash
         run: |
-            python -m pip install --upgrade pip
-            python -m pip install --group dev
+            uv sync
 
       - name: Checks & Balances
         shell: bash
         run: |
+            export PATH=.venv/bin:.venv/Scripts:$PATH
             python support/checks-and-balances.py
 
       - name: Run Python checks (ruff)
         shell: bash
         run: |
+            export PATH=.venv/bin:.venv/Scripts:$PATH
             ruff check src tests
             ruff format --check src tests
 
@@ -77,6 +73,7 @@ jobs:
         env:
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
         run: |
+            export PATH=.venv/bin:.venv/Scripts:$PATH
             mypy src tests \
               --no-incremental --xslt-html-report $OUTDIR/mypy
 
@@ -85,11 +82,12 @@ jobs:
         env:
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
         run: |
-          py.test \
-              --cov=${{ env.PACKAGE }} \
-              --cov-report=html:$OUTDIR/coverage --cov-report=xml:$OUTDIR/coverage.xml \
-              --junitxml=$OUTDIR/junit/junit.xml --html=$OUTDIR/junit/junit.html --self-contained-html \
-            tests
+            export PATH=.venv/bin:.venv/Scripts:$PATH
+            py.test \
+                --cov=${{ env.PACKAGE }} \
+                --cov-report=html:$OUTDIR/coverage --cov-report=xml:$OUTDIR/coverage.xml \
+                --junitxml=$OUTDIR/junit/junit.xml --html=$OUTDIR/junit/junit.html --self-contained-html \
+              tests
 
       # https://github.com/codecov/codecov-action
       - name: Upload coverage reports to Codecov
@@ -105,7 +103,7 @@ jobs:
         env:
           GITHUB_DUMP: ${{ toJson(github) }}
         run: |
-          python ./support/builder.pyz --build pyproject.toml
+            uv run support/builder.py --release --python .venv/bin/python src/acbox/__init__.py
 
       - name: Archive artifacts
         uses: actions/upload-artifact@v4
@@ -118,10 +116,10 @@ jobs:
         # Use always() to always run this step to publish test results when there are test failures
         if: always()
 
-      # # https://github.com/pypa/gh-action-pypi-publish
-      # - name: "Publish beta package to pypi"
-      #   uses: pypa/gh-action-pypi-publish@release/v1
-      #   if: ${{ (matrix.python-version == env.TARGETPY) && (matrix.os == env.TARGETOS) }}
-      #   with:
-      #     attestations: false
-      #     password: ${{ secrets.PYPI_API_TOKEN }}
+      # https://github.com/pypa/gh-action-pypi-publish
+      - name: "Publish beta package to pypi"
+        uses: pypa/gh-action-pypi-publish@release/v1
+        if: ${{ (matrix.python-version == env.TARGETPY) && (matrix.os == env.TARGETOS) }}
+        with:
+          attestations: false
+          password: ${{ secrets.PYPI_API_TOKEN }}
