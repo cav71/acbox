@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# 1. process the script header
+# 2. use wheel.wheelfile to pack it
+
 import argparse
 import contextlib
 import logging
