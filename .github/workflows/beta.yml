@@ -116,10 +116,10 @@ jobs:
         # Use always() to always run this step to publish test results when there are test failures
         if: always()
 
-     # https://github.com/pypa/gh-action-pypi-publish
-     - name: "Publish beta package to pypi"
-       uses: pypa/gh-action-pypi-publish@release/v1
-       if: ${{ (matrix.python-version == env.TARGETPY) && (matrix.os == env.TARGETOS) }}
-       with:
-         attestations: false
-         password: ${{ secrets.PYPI_API_TOKEN }}
+      # https://github.com/pypa/gh-action-pypi-publish
+      - name: "Publish beta package to pypi"
+        uses: pypa/gh-action-pypi-publish@release/v1
+        if: ${{ (matrix.python-version == env.TARGETPY) && (matrix.os == env.TARGETOS) }}
+        with:
+          attestations: false
+          password: ${{ secrets.PYPI_API_TOKEN }}
