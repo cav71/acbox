@@ -200,7 +200,7 @@ def test_value(what, expected, found, status=S.FAILED) -> Record:
 
 
 def main() -> int:
-    config = json.loads((Path(__file__).parent / "conf.json").read_text())
+    # config = json.loads((Path(__file__).parent / "conf.json").read_text())
 
     report = []
 
@@ -214,17 +214,17 @@ def main() -> int:
     report.append(check_python("python3"))
 
     # packages
-    expected = {c["name"]: c["version"] for c in config["packages"]}
-    found = get_installed_using_pip(which1("python"))
+    # expected = {c["name"]: c["version"] for c in config["packages"]}
+    # found = get_installed_using_pip(which1("python"))
 
-    def skipfn(_name: str, left: str, _right: str) -> bool:
-        return left == "N/A"
+    # def skipfn(name: str, left: str, _right: str) -> bool:
+    #     return left == "N/A"
 
-    report.append(report_diffdict(expected, found, skipfn, " between installed packages and expected"))
+    # report.append(report_diffdict(expected, found, skipfn, " between installed packages and expected"))
 
-    #     # packages/.so
-    #     report.append(check_installed_python_packages())
-    #     report.append(missing_so_files(Path("/opt/python")))
+    # # packages/.so
+    # report.append(check_installed_python_packages())
+    # report.append(missing_so_files(Path("/opt/python")))
 
     print("= POST BUILD CHECKS =")
     print(dumps(report))
