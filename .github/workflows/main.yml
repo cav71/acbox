@@ -38,11 +38,11 @@ jobs:
           # WARNING!! this is important
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Quick
+    
+      - name: X
         shell: bash
         run: |
-          cat $GITHUB_PATH
+          echo "got [${{ env.workspace }}]"
           exit 1
 
       - name: Dump ENV
