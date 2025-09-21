@@ -60,7 +60,7 @@ acbox = "acbox.maincli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-namespaces = true
+namespaces = false
 
 [tool.ruff]
 target-version = "py39"
@@ -91,6 +91,7 @@ exclude = [
     "docs/conf\\.py",
     "^docs/\\.*",
     "^build/\\.*",
+    "^support/\\.*",
 ]
 
 [tool.coverage.run]

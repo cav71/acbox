@@ -16,6 +16,12 @@ class Git:
         workdir = workdir.expanduser().absolute()
         return cls(workdir, runc=Runner(verbose=verbose, exe=["git", "--git-dir", f"{workdir}/.git"]))
 
+    # @classmethod
+    # def clone(cls, url: str, workdir: Path, args: Paths | None = None, verbose: bool = False) -> Git:
+    #     runc = Runner(verbose=True)
+    #     runc(["git", "clone", *(args or []), url, workdir])
+    #     return cls.new(workdir, verbose)
+
     def __call__(self, args: Paths) -> str:
         out = self.runc(args, capture=True) or ""
         return (out.decode("utf-8") if isinstance(out, bytes) else out).strip()

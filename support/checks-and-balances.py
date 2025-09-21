@@ -67,12 +67,12 @@ from acbox.ureporting import Record, S, check, print_report
 #
 #     # TODO check for libpython rpaths!
 #     return Record(".so files ok", S.OK)
-
-
-def test_value(what, expected, found, status=S.FAILED) -> Record:
-    if expected == found:
-        return Record(f"found the expected value for '{what}': '{expected}'", S.OK)
-    return Record(f"value expected for '{what}' is '{expected}' but found '{found}'", status)
+#
+#
+# def test_value(what, expected, found, status=S.FAILED) -> Record:
+#     if expected == found:
+#         return Record(f"found the expected value for '{what}': '{expected}'", S.OK)
+#     return Record(f"value expected for '{what}' is '{expected}' but found '{found}'", status)
 
 
 @check
