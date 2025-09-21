@@ -37,6 +37,7 @@ class GData:
     ref: str
     url: str
     main: str
+    version: str
 
 
 def add_arguments(fn: TypeFn) -> TypeFn:
@@ -96,15 +97,6 @@ def main(args: Namespace) -> None:
     default_branch = args.github["event"]["repository"]["default_branch"]
     log.info("default branch '%s'", default_branch)
 
-    gdata = GData(
-        branch=args.github["ref_name"],
-        rev=args.github["sha"][:7],
-        sha=args.github["sha"],
-        ref=args.github["ref"],
-        url=args.github["event"]["repository"]["html_url"],
-        main=default_branch,
-    )
-
     pyproject = Path("pyproject.toml")
     lineno, version = find_version(pyproject)
     log.info("found version '%s'", version)
@@ -118,6 +110,16 @@ def main(args: Namespace) -> None:
         count = gitx.commits_on_branch(f"origin/{default_branch}")
         newversion = f"{version}b{count}"
     log.info("releasing for '%s': %s -> %s", "release" if args.release else "beta", version, newversion)
+
+    gdata = GData(
+        branch=args.github["ref_name"],
+        rev=args.github["sha"][:7],
+        sha=args.github["sha"],
+        ref=args.github["ref"],
+        url=args.github["event"]["repository"]["html_url"],
+        main=default_branch,
+        version=newversion,
+    )
 
     with backups() as save:
         save(pyproject)
