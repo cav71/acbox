@@ -71,6 +71,8 @@ class Runner:
             fullargs = [*mkpaths(self.exe), *fullargs]
 
         log.debug("%srun: %s", "(dry-run) " if dryrun else "", " ".join(fullargs))
+        if dryrun:
+            return None
         return runc(fullargs, stdout=stdout, stderr=stderr, overrides=overrides, cwd=cwd)
 
 

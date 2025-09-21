@@ -30,7 +30,7 @@ def process_loglevel(options: Namespace, verbose_flag: bool = False) -> Namespac
 
 def clickwrapper(
     add_arguments: Callable[[TypeFn], TypeFn] | None = None,
-    process_options: Callable[[Namespace], None] | None = None,
+    process_options: Callable[[Namespace], None | Namespace] | None = None,
     verbose_flag: bool = False,
 ) -> Callable[[TypeFn], None]:
     def _clickwrapper(fn: TypeFn):

@@ -1,0 +1,28 @@
+from __future__ import annotations
+
+import dataclasses as dc
+from pathlib import Path
+
+from .runner import Paths, Runner
+
+
+@dc.dataclass
+class Git:
+    workdir: Path
+    runc: Runner
+
+    @classmethod
+    def new(cls, workdir: Path, verbose: bool) -> Git:
+        workdir = workdir.expanduser().absolute()
+        return cls(workdir, runc=Runner(verbose=verbose, exe=["git", "--git-dir", f"{workdir}/.git"]))
+
+    def __call__(self, args: Paths) -> str:
+        out = self.runc(args, capture=True) or ""
+        return (out.decode("utf-8") if isinstance(out, bytes) else out).strip()
+
+    def branch(self, name: str = "HEAD") -> str:
+        return self(["rev-parse", "--abbrev-ref", name])
+
+    def commits_on_branch(self, main: str = "origin/main"):
+        parent = self(["merge-base", self.branch(), main]).strip()
+        return int(self(["rev-list", "--count", f"{parent}..{self.branch()}"]))

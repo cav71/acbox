@@ -5,7 +5,7 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Generator
+from typing import Callable, Generator
 
 
 def which_n(exe: str | Path) -> list[Path] | None:
@@ -37,3 +37,26 @@ def tmpdir(source: Path | None) -> Generator[Path, None, None]:
     finally:
         if not source:
             shutil.rmtree(wdir, ignore_errors=True)
+
+
+@contextlib.contextmanager
+def backups() -> Generator[Callable[[Path | str], tuple[Path, Path]], None, None]:
+    pathlist: list[Path] = []
+
+    def save(path: Path | str) -> tuple[Path, Path]:
+        nonlocal pathlist
+        original = Path(path).expanduser().absolute()
+        backup = original.parent / f"{original.name}.bak"
+        if backup.exists():
+            raise RuntimeError("backup file present", backup)
+        shutil.copy(original, backup)
+        pathlist.append(backup)
+        return original, backup
+
+    try:
+        yield save
+    finally:
+        for backup in pathlist:
+            original = backup.with_suffix("")
+            original.unlink()
+            shutil.move(backup, original)

@@ -1,17 +1,20 @@
+import dataclasses as dc
 import os
 import platform
-import sys
 import shutil
-import dataclasses as dc
+import sys
 from pathlib import Path
-from tooling.ureporting import check, print_report, Record, S
 from typing import Callable
+
+from tooling.ureporting import Record, S, check, print_report
+
 
 @dc.dataclass
 class skipfn:
     callable: Callable
+
     def __call__(self, key, value):
-        return self.callable(key, value) 
+        return self.callable(key, value)
 
 
 def githubs(key, value):
@@ -29,11 +32,9 @@ def check_sys(group) -> list[Record]:
 @check
 def check_environ(group) -> list[Record]:
     def chunk(txt, n):
-        return [txt[i:i+n] for i in range(0, len(txt),n)]
+        return [txt[i : i + n] for i in range(0, len(txt), n)]
 
-    exclude = [
-        skipfn(githubs)
-    ]
+    exclude = [skipfn(githubs)]
     special = {
         "PATH": lambda value: value.split(os.pathsep),
         "MANPATH": lambda value: value.split(os.pathsep),
@@ -47,7 +48,7 @@ def check_environ(group) -> list[Record]:
         if key in {"_"}:
             continue
         fn = special.get(key, lambda value: value)
-        result.append(Record(S.NOSTATUS, group, key, fn(value))) 
+        result.append(Record(S.NOSTATUS, group, key, fn(value)))
     return result
 
 
@@ -73,10 +74,10 @@ def check_executables(group: str) -> list[Record]:
         if found := shutil.which(exe):
             bins = f"found in {found}"
             if found != str(Path(found).resolve()):
-                bins = [bins, f"({Path(found).resolve()})"]
+                bins = [bins, f"({Path(found).resolve()})"]  # type: ignore
             result.append(Record(S.NOSTATUS, group, exe, bins))
         else:
-            result.append(Record(S.NOSTATUS, group, exe, f"not found"))
+            result.append(Record(S.NOSTATUS, group, exe, "not found"))
     return result
 
 
@@ -86,14 +87,14 @@ def check_envfile(group: str) -> list[Record]:
     result = []
     if path.exists():
         lines = [
-            [l.strip() for l in line.split("=")] 
-            for line in path.read_text().split("\n") 
+            [lx.strip() for lx in line.split("=")]
+            for line in path.read_text().split("\n")
             if line.strip() and "=" in line and len(line.split("=")) == 2
         ]
         for key, value in lines:
             result.append(Record(S.NOSTATUS, group, key, value))
     else:
-        result.append(Record(S.NOSTATUS, group, "not-found")) 
+        result.append(Record(S.NOSTATUS, group, "not-found"))
     return result
 
 
