@@ -14,5 +14,5 @@ def test_clone(tmp_path):
     assert git.worktree.exists() and git.worktree.is_dir()
     assert git.gitdir.exists() and git.gitdir.is_dir()
     assert git.gitdir == (git.worktree / ".git")
-    assert (git.worktree / "support/builder.pyz").exists()
+    assert (git.worktree / "support/builder.py").exists()
     assert git.branch() == "main"
