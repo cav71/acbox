@@ -67,9 +67,7 @@ jobs:
         env:
           PATH: .venv/bin:$PATH
         run: |
-          python3 -c "import shutil, sys; for a in sys.argv[1:]: print(a, shutil.which(a))" python ruff
-          which python
-  
+          python3 -c "import shutil, sys; print('\n'.join(f'{a} - {shutil.which(a)}' for a in sys.argv[1:]))" python ruff
           echo "got [$PATH]"
           exit 1
 
