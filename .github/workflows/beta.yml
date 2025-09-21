@@ -103,7 +103,7 @@ jobs:
         env:
           GITHUB_DUMP: ${{ toJson(github) }}
         run: |
-            git fetch --all
+            git reflog show --no-abbrev beta/0.0.0
             uv run support/builder.py --beta --python .venv/bin/python src/acbox/__init__.py
 
       - name: Archive artifacts
