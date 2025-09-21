@@ -103,7 +103,7 @@ jobs:
         env:
           GITHUB_DUMP: ${{ toJson(github) }}
         run: |
-            uv run support/builder.py --beta -v --python .venv/bin/python 
+            uv run support/builder.py --beta --python .venv/bin/python 
 
       - name: Archive artifacts
         uses: actions/upload-artifact@v4

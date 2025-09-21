@@ -82,7 +82,7 @@ def process_inplace(path: Path, gdata: GData):
     path.write_text(tmpl.render())
 
 
-@click.command()  # type: ignore
+@click.command()
 @clickwrapper(add_arguments, process_options, verbose_flag=True)
 def main(args: Namespace) -> None:
     runc = Runner(verbose=args.verbose)
@@ -131,7 +131,8 @@ def main(args: Namespace) -> None:
             process_inplace(path, gdata)
 
         log.info("building wheel package")
-        runc([args.python or sys.executable, "-m", "build", "."], dryrun=args.dryrun)
+        if not args.dryrun:
+            runc([args.python or sys.executable, "-m", "build", "."], verbose=True)
 
 
 if __name__ == "__main__":
