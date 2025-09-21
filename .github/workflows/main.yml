@@ -10,7 +10,7 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 env:
   PACKAGE: ${{ github.event.repository.name }}
   PYTHONPATH: src
-  PATH: ${{ github.workspace }}/.venv/bin:${{ env.PATH }}
+  PATH: ${{ github.workspace }}/.venv/bin:$PATH
   GITHUB_DUMP_FULL: ${{ toJson(github) }}
   GITHUB_DUMP: |
     {
