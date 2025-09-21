@@ -116,6 +116,10 @@ def executables():
                 break
         message = f"found {found}" if found else "not-found"
         result.append(Record(S.NOSTATUS, "executable", str(target), message))
+
+    items = [str(path) for path in (Path(".venv") / "bin").glob("*")]
+    result.append(Record(S.NOSTATUS, "venv/bin", "files", items))
+
     return result
 
 
