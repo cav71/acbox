@@ -31,7 +31,6 @@ class Git:
 
     def commits_on_branch(self, main: str = "origin/main"):
         changes = self(["reflog", "show", "--no-abbrev", self.branch()])
-        print("====>", changes)
         return len([n for n in changes.split("\n") if n.strip()])
         # parent = self(["merge-base", self.branch(), main]).strip()
         # return int(self(["rev-list", "--count", f"{parent}..{self.branch()}"]))

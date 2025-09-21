@@ -19,6 +19,7 @@ from pathlib import Path
 
 import click
 import jinja2
+import tomllib
 
 import acbox
 from acbox.cli2 import TypeFn, clickwrapper
@@ -83,6 +84,14 @@ def process_inplace(path: Path, gdata: GData):
     path.write_text(tmpl.render())
 
 
+def get_new_beta_number(name: str, version: str) -> int:
+    from urllib.request import urlopen
+
+    txt = json.loads(urlopen(f"https://pypi.org/pypi/{name}/json").read())
+    values = [int(r.partition("b")[2]) for r in txt["releases"] if r.startswith(f"{version}b")]
+    return (max(values) + 1) if values else 0
+
+
 @click.command()
 @clickwrapper(add_arguments, process_options, verbose_flag=True)
 def main(args: Namespace) -> None:
@@ -99,7 +108,8 @@ def main(args: Namespace) -> None:
 
     pyproject = Path("pyproject.toml")
     lineno, version = find_version(pyproject)
-    log.info("found version '%s'", version)
+    name = tomllib.loads(pyproject.read_text())["project"]["name"]
+    log.info("processing project '%s' @ %s", name, version)
 
     # release only from a tag
     if args.release:
@@ -107,7 +117,7 @@ def main(args: Namespace) -> None:
             raise click.UsageError(f"cannot release {version=}, current ref in github is {args.github['ref']}")
         newversion = version
     elif args.beta:
-        count = gitx.commits_on_branch(f"origin/{default_branch}")
+        count = get_new_beta_number(name, version)
         newversion = f"{version}b{count}"
     log.info("releasing for '%s': %s -> %s", "release" if args.release else "beta", version, newversion)
 
