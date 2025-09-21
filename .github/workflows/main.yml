@@ -39,6 +39,12 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
 
+      - name: Quick
+        shell: bash
+        run: |
+          cat $GITHUB_PATH
+          exit 1
+
       - name: Dump ENV
         shell: bash
         run: |
