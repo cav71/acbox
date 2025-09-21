@@ -16,11 +16,6 @@ help: ## Display the list of available targets
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 
-.PHONY: pack
-pack:  ## create self standing package
-	python -m build .
-	./support/packer.py -vi dist
-
 .PHONY: check
 check: ## ruff check + lint
 	ruff check $(SOURCES)
@@ -40,7 +35,6 @@ lint:  ## run the linter (mypy) and report errors.
 .PHONY: tests
 tests:  ## run all tests
 	pytest -vvs tests
-
 
 .PHONY: coverage
 coverage:  ## run all tests with coverage
