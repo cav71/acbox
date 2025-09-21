@@ -42,7 +42,7 @@ jobs:
       - name: X
         shell: bash
         run: |
-          echo "got [${{ github.workflow }}]"
+          echo "got [${{ github.path }}]"
           exit 1
 
       - name: Dump ENV
