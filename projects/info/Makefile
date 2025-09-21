@@ -6,5 +6,4 @@ export PYTHONPATH = ../../src
 
 .PHONY: pack
 pack:  ## create self standing package
-	python -m build .
-	../../support/packer.py -v -i dist acbox
+	../../support/packer.py -v info.py

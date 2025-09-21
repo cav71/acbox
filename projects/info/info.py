@@ -2,6 +2,7 @@
 # dependencies = [
 # "rich",
 # "click",
+# "acbox",
 # ]
 # ///
 
@@ -12,9 +13,9 @@ import acbox
 
 
 def main():
-    print("ACBOX", acbox)
     print("CLICK", click)
     print("RICH", rich)
+    print("ACBOX", acbox)
 
 
 if __name__ == "__main__":
