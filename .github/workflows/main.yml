@@ -59,8 +59,8 @@ jobs:
 
       - name: Checks & Balances
         shell: bash
-        env:
-          PATH: .venv/bin:$PATH
+        #env:
+        #  PATH: .venv/bin:$PATH
         run: |
             python support/checks-and-balances.py
 
