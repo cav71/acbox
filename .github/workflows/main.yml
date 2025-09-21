@@ -58,7 +58,7 @@ jobs:
       - name: Checks & Balances
         shell: bash
         run: |
-            source .venv/bin/activate
+            export PATH=.venv/bin:$PATH
             python support/checks-and-balances.py
 
       - name: Run Python checks (ruff)
