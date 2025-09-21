@@ -107,7 +107,7 @@ def executables():
         result.append(Record(S.NOSTATUS, "executable", exe, message))
 
     for exe in ["python", "python3", "pip", "pip3"]:
-        target = Path(".venv") / "bin" / exe
+        target = Path(".venv") / ("Scripts" if sys.platform == "win32" else "bin") / exe
         found = None
         for ext in ["", ".exe"]:
             test = target.with_suffix(ext)
