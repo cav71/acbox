@@ -39,84 +39,92 @@ jobs:
           # WARNING!! this is important
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
-    
-      - name: x
-        run: |
-          echo "Got [$SHELL]"
 
-#       - name: Dump ENV
-#         shell: bash
-#         run: |
-#           echo "=== GITHUB_DUMP ==="
-#           echo "$GITHUB_DUMP_FULL" | python -m json.tool
-#           echo "=== END GITHUB_DUMP ==="
-# 
-#       # https://github.com/actions/setup-python
-#       - name: Setup Python toolchain for ${{ matrix.python-version }}
-#         uses: actions/setup-python@v6
-#         with:
-#           python-version: ${{ matrix.python-version }}
-# 
-#       # https://github.com/astral-sh/setup-uv
-#       - name: Install uv
-#         uses: astral-sh/setup-uv@v6
-# 
-#       - name: Python dependencies
-#         shell: bash
-#         run: |
-#             echo "${{github.workspace}}/.venv/bin" >> "$GITHUB_PATH"
-#             uv sync
-# 
-#       - name: Checks & Balances
-#         shell: bash
-#         env:
-#           PATH: .venv/bin:$PATH
-#         run: |
-#             python support/checks-and-balances.py
-# 
-#       - name: Run Python checks (ruff)
-#         shell: bash
-#         env:
-#           PATH: .venv/bin:$PATH
-#         run: |
-#             ruff check src tests
-#             ruff format --check src tests
-# 
-#       - name: Run Python checks (mypy)
-#         shell: bash
-#         env:
-#           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
-#         run: |
-#             mypy src tests \
-#               --no-incremental --xslt-html-report $OUTDIR/mypy
-# 
-#       - name: Run Python checks (tests)
-#         shell: bash
-#         env:
-#           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
-#         run: |
-#           py.test \
-#               --cov=${{ env.PACKAGE }} \
-#               --cov-report=html:$OUTDIR/coverage --cov-report=xml:$OUTDIR/coverage.xml \
-#               --junitxml=$OUTDIR/junit/junit.xml --html=$OUTDIR/junit/junit.html --self-contained-html \
-#             tests
-# 
-#       # https://github.com/codecov/codecov-action
-#       - name: Upload coverage reports to Codecov
-#         uses: codecov/codecov-action@v5
-#         if: ${{ (matrix.python-version == env.TARGETPY) && (matrix.os == env.TARGETOS) }}
-#         with:
-#           files: $OUTDIR/coverage.xml
-#           token: ${{ secrets.CODECOV_TOKEN }}
-#           verbose: true # optional (default = false)
-# 
-#       - name: Archive artifacts
-#         uses: actions/upload-artifact@v4
-#         with:
-#           name: qa-results-${{ matrix.python-version }}-${{ matrix.os }}
-#           path: |
-#             build/qa-${{ matrix.python-version }}-${{ matrix.os}}
-#             dist
-#             .keepme
-#         # Use always() to always run this step to publish test results when there are test failures
-#         if: always()
+      - &shell
+        shell: bash
+        env:
+          PATH: .venv/bin:$PATH
+        
+      - *shell
+        name: Test Anchor
+        run: |
+          python3 -c "import shutil, sys; print('\n'.join(f'{a} - {shutil.which(a)}' for a in sys.argv[1:]))" python ruff
+    
+      - name: Dump ENV
+        shell: bash
+        env:
+          PATH: .venv/bin:$PATH
+        run: |
+          echo "=== GITHUB_DUMP ==="
+          echo "$GITHUB_DUMP_FULL" | python -m json.tool
+          echo "=== END GITHUB_DUMP ==="
+
+      # https://github.com/actions/setup-python
+      - name: Setup Python toolchain for ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # https://github.com/astral-sh/setup-uv
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Python dependencies
+        shell: bash
+        run: |
+            echo "${{github.workspace}}/.venv/bin" >> "$GITHUB_PATH"
+            uv sync
+
+      - name: Checks & Balances
+        shell: bash
+        env:
+          PATH: .venv/bin:$PATH
+        run: |
+            python support/checks-and-balances.py
+
+      - name: Run Python checks (ruff)
+        shell: bash
+        env:
+          PATH: .venv/bin:$PATH
+        run: |
+            ruff check src tests
+            ruff format --check src tests
+
+      - name: Run Python checks (mypy)
+        shell: bash
+        env:
+          OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
+        run: |
+            mypy src tests \
+              --no-incremental --xslt-html-report $OUTDIR/mypy
+
+      - name: Run Python checks (tests)
+        shell: bash
+        env:
+          OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
+        run: |
+          py.test \
+              --cov=${{ env.PACKAGE }} \
+              --cov-report=html:$OUTDIR/coverage --cov-report=xml:$OUTDIR/coverage.xml \
+              --junitxml=$OUTDIR/junit/junit.xml --html=$OUTDIR/junit/junit.html --self-contained-html \
+            tests
+
+      # https://github.com/codecov/codecov-action
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        if: ${{ (matrix.python-version == env.TARGETPY) && (matrix.os == env.TARGETOS) }}
+        with:
+          files: $OUTDIR/coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true # optional (default = false)
+
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-results-${{ matrix.python-version }}-${{ matrix.os }}
+          path: |
+            build/qa-${{ matrix.python-version }}-${{ matrix.os}}
+            dist
+            .keepme
+        # Use always() to always run this step to publish test results when there are test failures
+        if: always()
