@@ -106,8 +106,9 @@ def executables():
         message = f"found {found}" if found else "not-found"
         result.append(Record(S.NOSTATUS, "executable", exe, message))
 
+    venv = Path(".venv") / ("Scripts" if sys.platform == "win32" else "bin")
     for exe in ["python", "python3", "pip", "pip3"]:
-        target = Path(".venv") / ("Scripts" if sys.platform == "win32" else "bin") / exe
+        target = venv / exe
         found = None
         for ext in ["", ".exe"]:
             test = target.with_suffix(ext)
@@ -117,8 +118,8 @@ def executables():
         message = f"found {found}" if found else "not-found"
         result.append(Record(S.NOSTATUS, "executable", str(target), message))
 
-    items = [str(path) for path in (Path(".venv") / "bin").glob("*")]
-    result.append(Record(S.NOSTATUS, "venv/bin", "files", items))
+    items = [str(path) for path in venv.glob("*")]
+    result.append(Record(S.NOSTATUS, str(venv), "files", items))
 
     return result
 
