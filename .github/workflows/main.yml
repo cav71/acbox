@@ -21,7 +21,7 @@ env:
     }
   TARGETPY: "3.13"
   TARGETOS: "ubuntu-latest"
-  PATH: .venv/bin:$PATH
+
 
 jobs:
   main:
@@ -65,6 +65,8 @@ jobs:
 
       - name: X
         shell: bash
+        env:
+          PATH: .venv/bin:$PATH
         run: |
           python3 -c "import shutil, sys; print('\n'.join(f'{a} - {shutil.which(a)}' for a in sys.argv[1:]))" python ruff
           echo "got [$PATH]"
