@@ -21,6 +21,7 @@ env:
     }
   TARGETPY: "3.13"
   TARGETOS: "ubuntu-latest"
+  PATH: .venv/bin:$PATH
 
 jobs:
   main:
@@ -31,8 +32,6 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      env:
-        PATH: .venv/bin:$PATH
       # https://github.com/actions/checkout
       - name: Checkout
         uses: actions/checkout@v4
