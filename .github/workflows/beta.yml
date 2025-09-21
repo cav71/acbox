@@ -22,6 +22,7 @@ env:
   TARGETPY: "3.13"
   TARGETOS: "ubuntu-latest"
 
+
 jobs:
   betas:
     strategy:
@@ -39,13 +40,6 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Dump ENV
-        shell: bash
-        run: |
-          echo "=== GITHUB_DUMP ==="
-          echo "$GITHUB_DUMP_FULL" | python -m json.tool
-          echo "=== END GITHUB_DUMP ==="
-
       # https://github.com/actions/setup-python
       - name: Setup Python toolchain for ${{ matrix.python-version }}
         uses: actions/setup-python@v6
@@ -59,17 +53,18 @@ jobs:
       - name: Python dependencies
         shell: bash
         run: |
-            python -m pip install --upgrade pip
-            python -m pip install --group dev
+            uv sync
 
       - name: Checks & Balances
         shell: bash
         run: |
+            export PATH=.venv/bin:.venv/Scripts:$PATH
             python support/checks-and-balances.py
 
       - name: Run Python checks (ruff)
         shell: bash
         run: |
+            export PATH=.venv/bin:.venv/Scripts:$PATH
             ruff check src tests
             ruff format --check src tests
 
@@ -78,6 +73,7 @@ jobs:
         env:
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
         run: |
+            export PATH=.venv/bin:.venv/Scripts:$PATH
             mypy src tests \
               --no-incremental --xslt-html-report $OUTDIR/mypy
 
@@ -86,11 +82,12 @@ jobs:
         env:
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
         run: |
-          py.test \
-              --cov=${{ env.PACKAGE }} \
-              --cov-report=html:$OUTDIR/coverage --cov-report=xml:$OUTDIR/coverage.xml \
-              --junitxml=$OUTDIR/junit/junit.xml --html=$OUTDIR/junit/junit.html --self-contained-html \
-            tests
+            export PATH=.venv/bin:.venv/Scripts:$PATH
+            py.test \
+                --cov=${{ env.PACKAGE }} \
+                --cov-report=html:$OUTDIR/coverage --cov-report=xml:$OUTDIR/coverage.xml \
+                --junitxml=$OUTDIR/junit/junit.xml --html=$OUTDIR/junit/junit.html --self-contained-html \
+              tests
 
       # https://github.com/codecov/codecov-action
       - name: Upload coverage reports to Codecov
