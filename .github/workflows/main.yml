@@ -40,22 +40,6 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Test Anchor
-        shell: bash
-        env:
-          PATH: .venv/bin:$PATH
-        run: |
-          python -c "import shutil, sys; print('\n'.join(f'{a} - {shutil.which(a)}' for a in sys.argv[1:]))" python ruff
-    
-      - name: Dump ENV
-        shell: bash
-        env:
-          PATH: .venv/bin:$PATH
-        run: |
-          echo "=== GITHUB_DUMP ==="
-          echo "$GITHUB_DUMP_FULL" | python -m json.tool
-          echo "=== END GITHUB_DUMP ==="
-
       # https://github.com/actions/setup-python
       - name: Setup Python toolchain for ${{ matrix.python-version }}
         uses: actions/setup-python@v6
@@ -66,10 +50,27 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
 
+      - name: Test Anchor
+        shell: bash
+        env:
+          PATH: .venv/bin:$PATH
+        run: |
+          python -c "import shutil, sys; print('\n'.join(f'{a} - {shutil.which(a)}' for a in sys.argv[1:]))" python ruff
+    
+#       - name: Dump ENV
+#         shell: bash
+#         env:
+#           PATH: .venv/bin:$PATH
+#         run: |
+#           echo "=== GITHUB_DUMP ==="
+#           echo "$GITHUB_DUMP_FULL" | python -m json.tool
+#           echo "=== END GITHUB_DUMP ==="
+
       - name: Python dependencies
         shell: bash
+        env:
+          PATH: .venv/bin:$PATH
         run: |
-            echo "${{github.workspace}}/.venv/bin" >> "$GITHUB_PATH"
             uv sync
 
       - name: Checks & Balances
@@ -90,6 +91,7 @@ jobs:
       - name: Run Python checks (mypy)
         shell: bash
         env:
+          PATH: .venv/bin:$PATH
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
         run: |
             mypy src tests \
@@ -98,6 +100,7 @@ jobs:
       - name: Run Python checks (tests)
         shell: bash
         env:
+          PATH: .venv/bin:$PATH
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
         run: |
           py.test \
