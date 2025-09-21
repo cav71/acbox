@@ -58,13 +58,13 @@ jobs:
       - name: Checks & Balances
         shell: bash
         run: |
-            export PATH=.venv/bin:$PATH
+            export PATH=.venv/bin:.venv/Scripts:$PATH
             python support/checks-and-balances.py
 
       - name: Run Python checks (ruff)
         shell: bash
         run: |
-            source .venv/bin/activate
+            export PATH=.venv/bin:.venv/Scripts:$PATH
             ruff check src tests
             ruff format --check src tests
 
@@ -73,7 +73,7 @@ jobs:
         env:
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
         run: |
-            source .venv/bin/activate
+            export PATH=.venv/bin:.venv/Scripts:$PATH
             mypy src tests \
               --no-incremental --xslt-html-report $OUTDIR/mypy
 
@@ -82,7 +82,7 @@ jobs:
         env:
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
         run: |
-            source .venv/bin/activate
+            export PATH=.venv/bin:.venv/Scripts:$PATH
             py.test \
                 --cov=${{ env.PACKAGE }} \
                 --cov-report=html:$OUTDIR/coverage --cov-report=xml:$OUTDIR/coverage.xml \
