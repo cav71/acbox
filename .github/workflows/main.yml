@@ -39,14 +39,6 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
     
-      - name: X
-        shell: bash
-        env:
-          PATH: .venv/bin:$PATH
-        run: |
-          echo "got [$PATH]"
-          exit 1
-
       - name: Dump ENV
         shell: bash
         run: |
@@ -69,6 +61,16 @@ jobs:
         run: |
             echo "${{github.workspace}}/.venv/bin" >> "$GITHUB_PATH"
             uv sync
+
+      - name: X
+        shell: bash
+        env:
+          PATH: .venv/bin:$PATH
+        run: |
+          which python
+          ehich ruff
+          echo "got [$PATH]"
+          exit 1
 
       - name: Checks & Balances
         shell: bash
