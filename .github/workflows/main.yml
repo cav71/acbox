@@ -41,8 +41,10 @@ jobs:
     
       - name: X
         shell: bash
+        env:
+          PATH: .venv/bin:$PATH
         run: |
-          echo "got [${{ github.path }}]"
+          echo "got [$PATH]"
           exit 1
 
       - name: Dump ENV
