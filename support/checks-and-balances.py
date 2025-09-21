@@ -107,10 +107,15 @@ def executables():
         result.append(Record(S.NOSTATUS, "executable", exe, message))
 
     for exe in ["python", "python3", "pip", "pip3"]:
-        vexe = Path(".venv") / "bin" / exe
-        found = vexe.exists()
+        target = Path(".venv") / "bin" / exe
+        found = None
+        for ext in ["", ".exe"]:
+            test = target.with_suffix(ext)
+            if test.exists():
+                found = str(test)
+                break
         message = f"found {found}" if found else "not-found"
-        result.append(Record(S.NOSTATUS, "executable", str(vexe), message))
+        result.append(Record(S.NOSTATUS, "executable", str(target), message))
     return result
 
 
