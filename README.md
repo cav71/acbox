@@ -1,6 +1,6 @@
 ## ACBox my little toolbox
 
-[![PyPI version](https://img.shields.io/pypi/a/acbox.svg?color=blue)](https://pypi.org/project/acbox)
+[![PyPI version](https://img.shields.io/pypi/v/acbox.svg?color=blue)](https://pypi.org/project/acbox)
 [![Python versions](https://img.shields.io/pypi/pyversions/acbox.svg)](https://pypi.org/project/acbox)
 [![License - MIT](https://img.shields.io/badge/license-MIT-9400d3.svg)](https://spdx.org/licenses/)
 
