@@ -2,13 +2,18 @@
 # 1. process the script header
 # 2. use wheel.wheelfile to pack it
 
-import argparse
 import contextlib
 import logging
 import os
-import shutil
+from argparse import Namespace
 from pathlib import Path
+from typing import Generator
 from zipfile import ZIP_DEFLATED, ZipFile
+
+import click
+
+import acbox.packer
+from acbox.cli2 import TypeFn, clickwrapper
 
 DEPS = {
     # uv tree --package rich
@@ -26,26 +31,16 @@ MAPPER = {
 log = logging.getLogger(__name__)
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
+def relpath(path: Path) -> Path:
+    with contextlib.suppress(ValueError):
+        return path.relative_to(Path.cwd())
+    return path
 
-    group = parser.add_argument_group("logging", "logging control")
-    group.add_argument("-v", "--verbose", dest="level", action="append_const", const=1)
-    group.add_argument("-q", "--quiet", dest="level", action="append_const", const=-1)
 
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("-o", "--output", type=Path)
-    group.add_argument("-i", "--inplace", action="store_true")
-
-    parser.add_argument("script", type=Path)
-    parser.add_argument("dependencies", nargs="*")
-
-    args = parser.parse_args()
-    args.error = parser.error
-
-    level = min(max(sum(args.level or [0]), -1), 1)
-    logging.basicConfig(level={-1: logging.WARNING, 0: logging.INFO, 1: logging.DEBUG}[level])
-    return args
+@contextlib.contextmanager
+def openpyz(out: Path) -> Generator[ZipFile, None, None]:
+    with ZipFile(out, "w", compression=ZIP_DEFLATED, allowZip64=True) as zfp:
+        yield zfp
 
 
 def add_dir(zfp: ZipFile, path: Path) -> None:
@@ -64,58 +59,46 @@ def add_dir(zfp: ZipFile, path: Path) -> None:
             zfp.write(Path(root) / file, str(base / file))
 
 
-def find_wheels(path: Path) -> list[Path]:
-    if not path.is_dir():
-        log.debug("looking at (possibly) a wheel file in %s", path)
-        return [path]
-    candidates = list(path.glob("*.whl"))
-    log.debug("scanning for wheels in %s, found: %s", path, candidates)
-    return candidates
+def add_arguments(fn: TypeFn) -> TypeFn:
+    click.argument("script", type=click.Path(exists=True, path_type=Path))(fn)
+    click.option("-o", "--output", default="dist/")(fn)
+    return fn
 
 
-@contextlib.contextmanager
-def generate(out: Path):
-    with ZipFile(out, "a", compression=ZIP_DEFLATED) as zfp:
-        yield zfp
-
-
-def get_dependencies(zfp: ZipFile) -> list[str]:
-    name = [name for name in zfp.namelist() if name.endswith("/METADATA")][0]
-    with zfp.open(name) as myfile:
-        dependencies = [
-            line.split(":")[1].strip() for line in myfile.read().decode("utf-8").split("\n") if line.startswith("Requires-Dist:")
-        ]
-    return dependencies
-
-
-def main(args: argparse.Namespace) -> None:
-    if len(wheels := find_wheels(args.script)) != 1:
-        args.error(f"found {'too many' if len(wheels) else 'no'} whl files in {args.script}")
-    wheel = wheels[0]
-    log.info("processing wheel file %s", wheel)
-
-    if args.inplace:
-        output = wheel
+def process_options(args: Namespace) -> None:
+    if (args.output[-1:] in {"/", "\\"}) or Path(args.output).is_dir():
+        args.output = Path(args.output) / args.script.with_suffix(".pyz").name
     else:
-        output = (args.output / wheel.name) if args.output.is_dir() else args.output
-        output.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(wheel, output)
-    log.info("output file in %s%s", output, " (in-place)" if args.inplace else "")
+        args.output = Path(args.output)
 
-    with generate(output) as zfp:
-        dependencies = get_dependencies(zfp)
-        log.info("using dependencies: %s", dependencies)
 
-        all_deps = set()
-        for dep in dependencies:
-            all_deps.add(dep)
-            if extra := DEPS.get(dep, []):
-                all_deps.update(extra)
-                log.debug("as subdependency of %s, added: %s", dep, extra)
+@click.command()
+@clickwrapper(add_arguments, process_options, verbose_flag=True)
+def main(args: Namespace) -> None:
+    log.info("creating package out of '%s'", args.script)
+    log.info("output %s", args.output)
 
-        for dep in sorted(all_deps | set(args.dependencies)):
-            mod = __import__(MAPPER.get(dep, dep))
+    subdir = None
+    if subdirs := list((args.script.parent / "src").glob("*")):
+        if len(subdirs) != 1:
+            raise RuntimeError(f"cannot process src dirs in {args.script.parent}")
+        subdir = subdirs[0]
+
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+
+    dependencies = set()
+    for dep in acbox.packer.read_header(args.script).get("dependencies", []):
+        dependencies.add(dep)
+        dependencies.update(DEPS.get(dep, set()))
+
+    with openpyz(args.output) as zfp:
+        zfp.write(args.script, "__main__.py")
+        if subdir:
+            add_dir(zfp, subdir)
+        for dependency in sorted(dependencies):
+            mod = __import__(MAPPER.get(dependency, dependency))
             path = Path(str(mod.__file__))
+            log.info("adding dep %s from %s", dependency, relpath(path))
             if path.name == "__init__.py":
                 add_dir(zfp, path.parent)
             else:
@@ -123,4 +106,4 @@ def main(args: argparse.Namespace) -> None:
 
 
 if __name__ == "__main__":
-    main(parse_args())
+    main()
