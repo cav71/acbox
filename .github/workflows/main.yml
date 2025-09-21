@@ -50,22 +50,6 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
 
-      - name: Test Anchor
-        shell: bash
-        env:
-          PATH: .venv/bin:$PATH
-        run: |
-          python -c "import shutil, sys; print('\n'.join(f'{a} - {shutil.which(a)}' for a in sys.argv[1:]))" python ruff
-    
-#       - name: Dump ENV
-#         shell: bash
-#         env:
-#           PATH: .venv/bin:$PATH
-#         run: |
-#           echo "=== GITHUB_DUMP ==="
-#           echo "$GITHUB_DUMP_FULL" | python -m json.tool
-#           echo "=== END GITHUB_DUMP ==="
-
       - name: Python dependencies
         shell: bash
         env:
