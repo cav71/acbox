@@ -52,46 +52,42 @@ jobs:
 
       - name: Python dependencies
         shell: bash
-        env:
-          PATH: .venv/bin:$PATH
         run: |
             uv sync
 
       - name: Checks & Balances
         shell: bash
-        #env:
-        #  PATH: .venv/bin:$PATH
         run: |
+            source .venv/bin/activate
             python support/checks-and-balances.py
 
       - name: Run Python checks (ruff)
         shell: bash
-        env:
-          PATH: .venv/bin:$PATH
         run: |
+            source .venv/bin/activate
             ruff check src tests
             ruff format --check src tests
 
       - name: Run Python checks (mypy)
         shell: bash
         env:
-          PATH: .venv/bin:$PATH
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
         run: |
+            source .venv/bin/activate
             mypy src tests \
               --no-incremental --xslt-html-report $OUTDIR/mypy
 
       - name: Run Python checks (tests)
         shell: bash
         env:
-          PATH: .venv/bin:$PATH
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
         run: |
-          py.test \
-              --cov=${{ env.PACKAGE }} \
-              --cov-report=html:$OUTDIR/coverage --cov-report=xml:$OUTDIR/coverage.xml \
-              --junitxml=$OUTDIR/junit/junit.xml --html=$OUTDIR/junit/junit.html --self-contained-html \
-            tests
+            source .venv/bin/activate
+            py.test \
+                --cov=${{ env.PACKAGE }} \
+                --cov-report=html:$OUTDIR/coverage --cov-report=xml:$OUTDIR/coverage.xml \
+                --junitxml=$OUTDIR/junit/junit.xml --html=$OUTDIR/junit/junit.html --self-contained-html \
+              tests
 
       # https://github.com/codecov/codecov-action
       - name: Upload coverage reports to Codecov
