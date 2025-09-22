@@ -1,16 +1,41 @@
 import functools
+import inspect
 import logging
 from argparse import Namespace
 from typing import Callable
 
 import click
+import cloup
+from cloup import (
+    HelpFormatter, HelpTheme, Style,
+    option, option_group
+)
 
 TypeFn = Callable[[Namespace], None]
 
 
+formatter_settings = HelpFormatter.settings(
+    theme=HelpTheme(
+        invoked_command=Style(fg='bright_yellow'),
+        heading=Style(fg='bright_white', bold=True),
+        constraint=Style(fg='magenta'),
+        col1=Style(fg='bright_yellow'),
+    )
+)
+
+
+def command(*args, **kwargs):
+    def _fn(func):
+        func = cloup.command(formatter_settings=formatter_settings)(func)
+        return func
+    return _fn
+
+
 def add_loglevel(fn: TypeFn) -> TypeFn:
-    fn = click.option("-v", "--verbose", count=True)(fn)
-    fn = click.option("-q", "--quiet", count=True)(fn)
+    fn = option_group("log level",
+        click.option("-v", "--verbose", count=True, help="increase level"),
+        click.option("-q", "--quiet", count=True, help="decrease level")
+    )(fn)
     return fn
 
 
@@ -35,8 +60,8 @@ def clickwrapper(
 ) -> Callable[[TypeFn], None]:
     def _clickwrapper(fn: TypeFn):
         fn = add_loglevel(fn)
-        if add_arguments:
-            fn = add_arguments(fn)
+        if add_arguments and not callable(fn := add_arguments(fn)):
+            raise RuntimeError(f"function {add_arguments} must return a callable TypeFn (source={inspect.getfile(add_arguments)})")
 
         @functools.wraps(fn)
         def __clickwrapper(*args, **kwargs):

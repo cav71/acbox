@@ -28,6 +28,7 @@ dependencies = [
     "click",
     "filetype",
     "rich",
+    "cloup",
     "pyyaml",
 ]
 
