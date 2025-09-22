@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "acbox"
-version = "0.0.0"
+version = "0.0.1"
 description = "Collection of small tools"
 readme = "README.md"
 license = { text = "MIT" }
@@ -43,7 +43,14 @@ dev = [
     "pytest-html",
     "ruff",
     "types-python-dateutil",
-    "types-pyyaml"
+    "types-pyyaml",
+    # docs
+    'mkdocs',
+    'mkdocs-exclude',
+    'mkdocs-llmstxt',
+    'mkdocs-material[imaging]',
+    'mkdocs-redirects',
+    'mkdocstrings-python',
 ]
 
 

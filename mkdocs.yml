@@ -1,0 +1,8 @@
+site_name: acbox
+site_url: https://mydomain.org/mysite
+theme:
+  name: material
+
+plugins:
+- search
+- mkdocstrings
