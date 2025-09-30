@@ -13,18 +13,26 @@ from zipfile import ZIP_DEFLATED, ZipFile
 import click
 
 import acbox.packer
-from acbox.cli2 import TypeFn, clickwrapper
+from acbox.clickwrapper import TypeFn, clickwrapper
 
 DEPS = {
-    # uv tree --package rich
+    # subdependencies (eg. if you include rich, you need also these)
+    # use `uv tree --package rich` to figure it out
     "rich": [
         "markdown-it-py",
         "mdurl",
+        "linkify-it-py",
+        "uc-micro-py",
+        "mdit-py-plugins",
         "pygments",
     ],
 }
+# change spelling of dependencies
 MAPPER = {
+    "linkify-it-py": "linkify_it",
     "markdown-it-py": "markdown_it",
+    "mdit-py-plugins": "mdit_py_plugins",
+    "uc-micro-py": "uc_micro",
 }
 
 
@@ -60,8 +68,9 @@ def add_dir(zfp: ZipFile, path: Path) -> None:
 
 
 def add_arguments(fn: TypeFn) -> TypeFn:
-    click.argument("script", type=click.Path(exists=True, path_type=Path))(fn)
     click.option("-o", "--output", default="dist/")(fn)
+    click.argument("dependencies", nargs=-1)(fn)
+    click.argument("script", type=click.Path(exists=True, path_type=Path))(fn)
     return fn
 
 
@@ -72,37 +81,44 @@ def process_options(args: Namespace) -> None:
         args.output = Path(args.output)
 
 
-@click.command()
+@click.command()  # type: ignore
 @clickwrapper(add_arguments, process_options, verbose_flag=True)
 def main(args: Namespace) -> None:
     log.info("creating package out of '%s'", args.script)
     log.info("output %s", args.output)
-
-    subdir = None
-    if subdirs := list((args.script.parent / "src").glob("*")):
-        if len(subdirs) != 1:
-            raise RuntimeError(f"cannot process src dirs in {args.script.parent}")
-        subdir = subdirs[0]
-
     args.output.parent.mkdir(parents=True, exist_ok=True)
 
-    dependencies = set()
-    for dep in acbox.packer.read_header(args.script).get("dependencies", []):
-        dependencies.add(dep)
-        dependencies.update(DEPS.get(dep, set()))
+    # dependencies come from command line
+    dependencies = []
+    for dep in args.dependencies:
+        log.debug("added cli dependency %s", dep)
+        dependencies.append(dep)
+        dependencies.extend(DEPS.get(dep, []))
+
+    # pull dependencies from the script itself (pep 723)
+    for dep in (acbox.packer.read_header(args.script) or {}).get("dependencies", []):
+        log.debug("added cli dependency from script %s", dep)
+        dependencies.append(dep)
+        dependencies.extend(DEPS.get(dep, []))
+
+    for index, dep in enumerate(dependencies):
+        if (path := Path(dep)).exists():
+            dependencies[index] = path
 
     with openpyz(args.output) as zfp:
         zfp.write(args.script, "__main__.py")
-        if subdir:
-            add_dir(zfp, subdir)
-        for dependency in sorted(dependencies):
-            mod = __import__(MAPPER.get(dependency, dependency))
-            path = Path(str(mod.__file__))
-            log.info("adding dep %s from %s", dependency, relpath(path))
-            if path.name == "__init__.py":
-                add_dir(zfp, path.parent)
+        for dep in dependencies:
+            if isinstance(dep, str):
+                mod = __import__(MAPPER.get(dep, dep))
+                path = Path(str(mod.__file__))
+                if path.name == "__init__.py":
+                    path = path.parent
             else:
-                raise RuntimeError("unsupported")
+                path = Path(dep)
+            log.info("adding dep %s from %s", dep, relpath(path))
+            add_dir(zfp, path)
+
+    log.info(f"generated {args.output}")
 
 
 if __name__ == "__main__":

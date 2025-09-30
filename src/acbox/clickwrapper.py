@@ -6,20 +6,17 @@ from typing import Callable
 
 import click
 import cloup
-from cloup import (
-    HelpFormatter, HelpTheme, Style,
-    option, option_group
-)
+from cloup import HelpFormatter, HelpTheme, Style, option_group
 
 TypeFn = Callable[[Namespace], None]
 
 
 formatter_settings = HelpFormatter.settings(
     theme=HelpTheme(
-        invoked_command=Style(fg='bright_yellow'),
-        heading=Style(fg='bright_white', bold=True),
-        constraint=Style(fg='magenta'),
-        col1=Style(fg='bright_yellow'),
+        invoked_command=Style(fg="bright_yellow"),
+        heading=Style(fg="bright_white", bold=True),
+        constraint=Style(fg="magenta"),
+        col1=Style(fg="bright_yellow"),
     )
 )
 
@@ -28,13 +25,15 @@ def command(*args, **kwargs):
     def _fn(func):
         func = cloup.command(formatter_settings=formatter_settings)(func)
         return func
+
     return _fn
 
 
 def add_loglevel(fn: TypeFn) -> TypeFn:
-    fn = option_group("log level",
+    fn = option_group(
+        "log level",
         click.option("-v", "--verbose", count=True, help="increase level"),
-        click.option("-q", "--quiet", count=True, help="decrease level")
+        click.option("-q", "--quiet", count=True, help="decrease level"),
     )(fn)
     return fn
 
