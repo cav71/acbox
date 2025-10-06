@@ -9,10 +9,15 @@ from urllib.request import urlopen
 
 
 def loadmod(path: Path | str) -> ModuleType:
-    if urlparse(str(path)).scheme in {"http", "https"}:
-        urltxt = str(urlopen(str(path)).read(), encoding="utf-8")
+    txt = None
+    if (parsed := urlparse(str(path))).scheme in {"http", "https"}:
+        txt = str(urlopen(str(path)).read(), encoding="utf-8")
+    elif parsed.scheme in {"file"}:
+        txt = Path(parsed.netloc).read_text()
+
+    if txt is not None:
         mod = ModuleType(str(path).rpartition("/")[2])
-        exec(urltxt, mod.__dict__)
+        exec(txt, mod.__dict__)
         return mod
 
     spec = spec_from_file_location(Path(path).name, Path(path))
