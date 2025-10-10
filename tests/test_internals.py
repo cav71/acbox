@@ -7,26 +7,23 @@ def test_script_lookup(resolver):
 def test_script_load(resolver):
     data = resolver.load("simple-script.py", "text")
     assert (
-        data
+        data[:525]
         == """
+# call this:
+#   simple-script.py - writes simple messages to stdout/stderr
+#   VALUE=123 simple-script.py - same as above, but writes VALUE message too
+#   WAIT=2 VALUE=123 simple-script.py - same as above, but wait 2s before printing last message
+#   ABORT=12 simple-script.py - same as above, but abort the script with error code 12
+import os
 import sys
-
-VALUE = 123
-
-
-def hello(msg):
-    print(f"Hi {msg}")
+import time
+from typing import TextIO
 
 
-def hello_stderr(msg):
-    print(f"Hi stderr {msg}", file=sys.stderr)
-
-
-if __name__ == "__main__":
-    hello("Antonio")
-    hello_stderr("Antonio")
+def hello(index: int, msg: str, file: TextIO = sys.stdout) -> None:
+    print(f"{index}, got '{msg}' ({file.name})", file=file)
 """.lstrip()
     )
 
     mod = resolver.load("simple-script.py", "mod")
-    assert mod.VALUE, 123
+    assert callable(mod.hello)
