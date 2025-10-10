@@ -5,7 +5,7 @@ def test_load_mod(resolver):
     path = resolver.lookup("simple-script.py")
 
     mod = utils.loadmod(path)
-    assert mod.VALUE, 123
+    assert callable(mod.hello)
 
 
 def test_load_remote():
