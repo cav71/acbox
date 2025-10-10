@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses as dc
+import datetime
 import logging
 import os
 import subprocess
@@ -17,10 +18,22 @@ COLORS = {
     "clear": "\033[0m",
 }
 
+POLL_S = 0.03
+
 logger = logging.getLogger(__name__)
 
 
+@dc.dataclass
 class RunnerError(Exception):
+    message: str
+    cwd: Path | None
+    overrides: dict[str, str] | None
+    cmdline: str
+    returncode: int
+
+
+@dc.dataclass
+class TimeoutRunnerError(RunnerError):
     pass
 
 
@@ -88,6 +101,7 @@ def runc(
     stdout: OMode = "display",
     stderr: EMode = "display",
     overrides: dict[str, str] | None = None,
+    timeout: datetime.datetime | datetime.timedelta | int | float | None = None,
     **kwargs,
 ) -> str | bytes | None:
     kwargs["env"] = kwargs.pop("env") if "env" in kwargs else os.environ.copy()
@@ -122,17 +136,40 @@ def runc(
             args=(process.stderr,),
             daemon=True,
         )
-        othread.start()
-        ethread.start()
-        while process.poll() is not None:
-            time.sleep(0.05)
-        othread.join()
-        ethread.join()
+        expiry = None
+        if timeout:
+            if isinstance(timeout, datetime.datetime):
+                expiry = timeout
+            elif isinstance(timeout, datetime.timedelta):
+                expiry = datetime.datetime.now() + timeout
+            elif isinstance(timeout, (int, float)):
+                expiry = datetime.datetime.now() + datetime.timedelta(seconds=float(timeout))
+
+        started = False
+        while True:
+            if expiry and datetime.datetime.now() > expiry:
+                process.terminate()
+                break
+            if not started:
+                othread.start()
+                ethread.start()
+                started = True
+            time.sleep(POLL_S)
+            if process.poll() is not None:
+                break
+
+        if started:
+            othread.join()
+            ethread.join()
+
+    kind = RunnerError
+    if expiry and datetime.datetime.now() > expiry:
+        kind = TimeoutRunnerError
 
     if process.returncode:
-        envs = " ".join(f'{k}="{v}"' for k, v in (overrides or {}).items())
+        # envs = " ".join(f'{k}="{v}"' for k, v in (overrides or {}).items())
         cmdline = subprocess.list2cmdline(mkpaths(args))
-        raise RunnerError(f"failed to execute in cwd={kwargs['cwd']} ==> {envs} {cmdline}")
+        raise kind(f"failed to execute {cmdline}", kwargs["cwd"], overrides, cmdline, process.returncode)
     return ofiltermap.result if hasattr(ofiltermap, "result") else None
 
 
