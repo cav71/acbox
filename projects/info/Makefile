@@ -6,4 +6,4 @@ export PYTHONPATH = ../../src
 
 .PHONY: pack
 pack:  ## create self standing package
-	../../support/packer.py -v info.py
+	../../support/packer.py -v -x info.py

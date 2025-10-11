@@ -7,7 +7,7 @@ import logging
 import os
 from argparse import Namespace
 from pathlib import Path
-from typing import Generator
+from typing import IO, Generator
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import click
@@ -35,6 +35,16 @@ def relpath(path: Path) -> Path:
     with contextlib.suppress(ValueError):
         return path.relative_to(Path.cwd())
     return path
+
+
+@contextlib.contextmanager
+def inplace(path: Path) -> Generator[tuple[IO, bytes], None, None]:
+    data = path.read_bytes()
+    try:
+        yield open(path, "wb"), data
+    except Exception:
+        path.write_bytes(data)
+        raise
 
 
 @contextlib.contextmanager
@@ -74,6 +84,7 @@ def process_options(args: Namespace) -> None:
 
 @click.command()
 @clickwrapper(add_arguments, process_options, verbose_flag=True)
+@click.option("-x", "--executable", is_flag=True)
 def main(args: Namespace) -> None:
     log.info("creating package out of '%s'", args.script)
     log.info("output %s", args.output)
@@ -103,6 +114,11 @@ def main(args: Namespace) -> None:
                 add_dir(zfp, path.parent)
             else:
                 raise RuntimeError("unsupported")
+
+    if args.executable:
+        with inplace(args.output) as (fp, data):
+            fp.write(b"#!/usr/bin/env python3\n")
+            fp.write(data)
 
 
 if __name__ == "__main__":
