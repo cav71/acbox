@@ -12,6 +12,23 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 
+## Quickstart
+
+```
+pip install acbox
+```
+
+### Cli
+
+```
+from acbox import clickwrapper
+
+@clickwrapper.command()
+@clickwrapper.clickwrap("default")
+def main(args: Namespace) -> None:
+    print(args)
+```
+
 
 ### Development
 

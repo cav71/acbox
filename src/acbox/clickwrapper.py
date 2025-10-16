@@ -88,10 +88,15 @@ def clickwrap(
     return clickwrapper(args0, args1)
 
 
+def command():
+    return cloup.command(formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()))
+
+
 if __name__ == "__main__":
     log = logging.getLogger(__name__)
 
-    @cloup.command(formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()))
+    # @cloup.command(formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()))
+    @command()
     @clickwrap("default")
     def main(args: Namespace) -> int:
         log.debug("a debug message")

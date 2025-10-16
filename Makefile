@@ -21,7 +21,7 @@ check: ## ruff check + lint
 	ruff check $(SOURCES)
 	ruff format --check $(SOURCES)
 	dmypy run -- $(SOURCES)
-	@echo "🟢 [$@] pass"
+	@echo "\x1b[0;32m●\x1b[0m [$@] pass"
 
 .PHONY: fmt
 fmt:  ## format code (ruff check --fix), updating source files
