@@ -27,6 +27,7 @@ classifiers = [
 
 dependencies = [
     "click",
+    "cloup",
     "filetype",
     "rich",
     "pyyaml",
