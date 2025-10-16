@@ -2,7 +2,7 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#   "click",
+#   "acbox",
 #   "jinja2",
 # ]
 # ///
@@ -22,7 +22,7 @@ import jinja2
 import tomllib
 
 import acbox
-from acbox.cli2 import TypeFn, clickwrapper
+from acbox.clickwrapper import MainFn, clickwrap, command
 from acbox.fileops import backups
 from acbox.git import Git
 from acbox.runner import Runner
@@ -41,7 +41,7 @@ class GData:
     version: str
 
 
-def add_arguments(fn: TypeFn) -> TypeFn:
+def add_arguments(fn: MainFn) -> MainFn:
     fn = click.option("-p", "--python", type=click.Path(exists=True, path_type=Path))(fn)
     fn = click.option("-n", "--dry-run", is_flag=True)(fn)
     fn = click.option("--release", is_flag=True)(fn)
@@ -92,8 +92,8 @@ def get_new_beta_number(name: str, version: str) -> int:
     return (max(values) + 1) if values else 0
 
 
-@click.command()
-@clickwrapper(add_arguments, process_options, verbose_flag=True)
+@command()
+@clickwrap("default", add_arguments, process_options)
 def main(args: Namespace) -> None:
     runc = Runner(verbose=args.verbose)
     gitx = Git.new(verbose=args.verbose, workdir=Path.cwd())
