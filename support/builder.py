@@ -3,6 +3,8 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #   "acbox",
+#   "click",
+#   "cloup",
 #   "jinja2",
 # ]
 # ///
