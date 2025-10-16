@@ -13,11 +13,12 @@ env:
   # GITHUB_DUMP: ${{ toJson(github) }}
   GITHUB_DUMP: |
     {
-      "version":    "v1", 
-      "name":       "${{ github.event.repository.name }}",
-      "ref":        "${{ github.ref }}", 
-      "sha":        "${{ github.sha }}", 
-      "run_number": "${{ github.run_number }}"
+      "version":        "v1", 
+      "name":           "${{ github.event.repository.name }}",
+      "ref":            "${{ github.ref }}", 
+      "sha":            "${{ github.sha }}", 
+      "run_number":     "${{ github.run_number }}",
+      "default_branch": "${{ github.event.repository.default_branch }}"
     }
   TARGETPY: "3.13"
   TARGETOS: "ubuntu-latest"
