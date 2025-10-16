@@ -106,7 +106,9 @@ jobs:
         env:
           GITHUB_DUMP: ${{ toJson(github) }}
         run: |
-            uv run support/builder.py --beta --python .venv/bin/python src/acbox/__init__.py
+            uv run support/builder.py --beta \
+              src/acbox/__init__.py \
+              README.md
 
       - name: Archive artifacts
         uses: actions/upload-artifact@v4
