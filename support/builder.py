@@ -69,7 +69,12 @@ def process_options(options: Namespace) -> None:
     if not (options.github or os.getenv("GITHUB_DUMP")):
         raise click.BadParameter("need GITHUB_DUMP env variable or a --github option")
 
-    options.github = json.loads(Path(options.github).read_text() if options.github else (os.getenv("GITHUB_DUMP") or ""))
+    if options.github:
+        log.debug("github definition from cli %s", options.github)
+        options.github = json.loads(Path(options.github).read_text())
+    else:
+        log.debug("github definition from GITHUB_DUMP: %s", os.environ.get("GITHUB_DUMP", "N/A"))
+        options.github = json.loads(os.environ["GITHUB_DUMP"])
 
     options.__dict__["dryrun"] = options.__dict__.pop("dry_run")
 
