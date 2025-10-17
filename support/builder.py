@@ -75,7 +75,6 @@ def process_options(options: Namespace) -> None:
     else:
         log.debug("github definition from GITHUB_DUMP: %s", os.environ.get("GITHUB_DUMP", "N/A"))
         options.github = json.loads(os.environ["GITHUB_DUMP"])
-    breakpoint()
 
     options.__dict__["dryrun"] = options.__dict__.pop("dry_run")
 
@@ -129,7 +128,6 @@ def get_new_beta_number(name: str, version: str) -> int:
 @command()
 @clickwrap("default", add_arguments, process_options)
 def main(args: Namespace) -> None:
-    sys.exit(1)
     runc = Runner(verbose=args.verbose)
     gitx = Git.new(verbose=args.verbose, workdir=Path.cwd())
 
@@ -139,7 +137,7 @@ def main(args: Namespace) -> None:
     log.info("current branch is '%s'", gitx.branch())
 
     # X default branch
-    default_branch = args.github["default_branch"]
+    default_branch = args.github["event"]["repository"]["default_branch"]
     log.info("default branch '%s'", default_branch)
 
     pyproject = Path("pyproject.toml")
@@ -167,13 +165,13 @@ def main(args: Namespace) -> None:
     log.debug("ref = %s, count = %s, newversion = %s", args.github["ref"], count, newversion)
 
     gdata = GData(
-        name=args.github["name"],
+        name=args.github["event"]["repository"]["name"],
         ref=args.github["ref"],  # refs/heads/beta/0.0.2
         sha=args.github["sha"],  # 33eebf59f98adc51ee62f4db4a9ced2cb84bdaa2
         rev=args.github["sha"][:7],  # 33eebf5
-        url=f"{args.github['url']}/tree/{args.github['ref_name']}",
+        url=f"{args.github['event']['repository']['html_url']}/tree/{args.github['ref_name']}",
         run_number=int(args.github["run_number"] or 0),
-        default_branch=args.github["default_branch"],
+        default_branch=args.github["event"]["repository"]["default_branch"],
         branch=args.github["ref_name"],
         kind=kind,  # beta | release
         version=newversion,
