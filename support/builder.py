@@ -18,6 +18,7 @@ import re
 import sys
 from argparse import Namespace
 from pathlib import Path
+from typing import Literal
 
 import click
 import jinja2
@@ -34,13 +35,19 @@ log = logging.getLogger(__name__)
 
 @dc.dataclass
 class GData:
+    name: str  # acbox
+    ref: str  # refs/heads/beta/0.0.2
+    sha: str  # 33eebf59f98adc51ee62f4db4a9ced2cb84bdaa2
+    rev: str  # 33eebf5
+    url: str  # ?
+    run_number: int  # 123
+    default_branch: str  # <default-branch eg. main|master>
     branch: str
-    rev: str
-    sha: str
-    ref: str
-    url: str
-    main: str
+
+    # these are added here
+    kind: Literal["beta", "release", "main"]
     version: str
+    count: int | None
 
 
 def add_arguments(fn: MainFn) -> MainFn:
@@ -79,6 +86,24 @@ def find_version(pyproject: Path) -> tuple[int, str]:
     return result[0]
 
 
+def parse_ref(ref: str, default_branch: str) -> tuple[Literal["beta", "release", "main"], str | None]:
+    # ref is:
+    #   refs/heads/beta/0.0.0
+    #   refs/heads/main
+    #   refs/tags/v0.0.0
+    # returns -> (kind, branch_version)
+
+    if match := re.search(r"refs/tags/v(?P<version>\d+([.]\d+)*)", ref):
+        return ("release", match.group("version"))
+    elif match := re.search(r"refs/heads/beta/(?P<version>\d+([.]\d+)*)", ref):
+        return ("beta", match.group("version"))
+    elif ref == f"refs/heads/{default_branch}":
+        return ("main", None)
+    raise RuntimeError(f"cannot parse {ref=}")
+
+    return None
+
+
 def process_inplace(path: Path, gdata: GData):
     env = jinja2.Environment()
     env.globals = dict(gdata=gdata)
@@ -89,7 +114,8 @@ def process_inplace(path: Path, gdata: GData):
 def get_new_beta_number(name: str, version: str) -> int:
     from urllib.request import urlopen
 
-    txt = json.loads(urlopen(f"https://pypi.org/pypi/{name}/json").read())
+    index = f"https://pypi.org/pypi/{name}/json"
+    txt = json.loads(urlopen(index, timeout=20).read())
     values = [int(r.partition("b")[2]) for r in txt["releases"] if r.startswith(f"{version}b")]
     return (max(values) + 1) if values else 0
 
@@ -105,32 +131,46 @@ def main(args: Namespace) -> None:
     log.info("git client using workdir %s", gitx.workdir)
     log.info("current branch is '%s'", gitx.branch())
 
-    default_branch = args.github["event"]["repository"]["default_branch"]
+    # X default branch
+    default_branch = args.github["default_branch"]
     log.info("default branch '%s'", default_branch)
 
     pyproject = Path("pyproject.toml")
+    # X version
     lineno, version = find_version(pyproject)
     name = tomllib.loads(pyproject.read_text())["project"]["name"]
     log.info("processing project '%s' @ %s", name, version)
 
-    # release only from a tag
+    # X branch, count, newversion
+    kind, branch_version = parse_ref(args.github["ref"], default_branch)
+
     if args.release:
-        if f"refs/tags/v{version}" != args.github["ref"]:
+        if kind != "release":
             raise click.UsageError(f"cannot release {version=}, current ref in github is {args.github['ref']}")
+        count = None
         newversion = version
     elif args.beta:
+        if kind != "beta":
+            raise click.UsageError(f"cannot release beta {version=}, current ref in github is {args.github['ref']}")
         count = get_new_beta_number(name, version)
         newversion = f"{version}b{count}"
-    log.info("releasing for '%s': %s -> %s", "release" if args.release else "beta", version, newversion)
+    else:
+        raise RuntimeError("un-handled branch!")
+    log.info("releasing for '%s': %s -> %s", kind, version, newversion)
+    log.debug("ref = %s, count = %s, newversion = %s", args.github["ref"], count, newversion)
 
     gdata = GData(
+        name=args.github["name"],
+        ref=args.github["ref"],  # refs/heads/beta/0.0.2
+        sha=args.github["sha"],  # 33eebf59f98adc51ee62f4db4a9ced2cb84bdaa2
+        rev=args.github["sha"][:7],  # 33eebf5
+        url=f"{args.github['url']}/tree/{args.github['ref_name']}",
+        run_number=int(args.github["run_number"] or 0),
+        default_branch=args.github["default_branch"],
         branch=args.github["ref_name"],
-        rev=args.github["sha"][:7],
-        sha=args.github["sha"],
-        ref=args.github["ref"],
-        url=args.github["event"]["repository"]["html_url"],
-        main=default_branch,
+        kind=kind,  # beta | release
         version=newversion,
+        count=count,
     )
 
     with backups() as save:

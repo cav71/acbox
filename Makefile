@@ -7,6 +7,8 @@ PROJECT = acbox
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
 SOURCES := support/checks-and-balances.py src tests
 BUILDDIR := build
+GDOT = $(shell tput setaf 2)●$(shell tput sgr0)
+RDOT = $(shell tput setaf 1)x$(shell tput sgr0)
 
 export PYTHONPATH=$(ROOT_DIR)/src
 
@@ -21,7 +23,7 @@ check: ## ruff check + lint
 	ruff check $(SOURCES)
 	ruff format --check $(SOURCES)
 	dmypy run -- $(SOURCES)
-	@echo "\x1b[0;32m●\x1b[0m [$@] pass"
+	@echo "$(GDOT) [$@] pass"
 
 .PHONY: fmt
 fmt:  ## format code (ruff check --fix), updating source files
@@ -30,7 +32,7 @@ fmt:  ## format code (ruff check --fix), updating source files
 
 .PHONY: lint
 lint:  ## run the linter (mypy) and report errors.
-	@mypy src tests && echo "🟢 mypy check pass"
+	@mypy src tests && echo "$(GDOT) mypy check pass" || echo "$(RDOT) mypy check failed"
 
 .PHONY: tests
 tests:  ## run all tests
@@ -48,5 +50,7 @@ coverage:  ## run all tests with coverage
 .PHONY: clean
 clean:  ## clean all artifacts
 	@rm -rf .dmypy.json src/acbox.egg-info dist $(BUILDDIR)
+	@rm -rf projects/info/dist
+	@rm -f tests/data/github/github.*.json
 	@python support/clean.py $(SOURCES)
-	@echo "🟢 cleaned"
+	@echo "$(GDOT) cleaned"

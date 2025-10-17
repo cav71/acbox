@@ -13,11 +13,13 @@ env:
   # GITHUB_DUMP: ${{ toJson(github) }}
   GITHUB_DUMP: |
     {
-      "version":    "v1", 
-      "name":       "${{ github.event.repository.name }}",
-      "ref":        "${{ github.ref }}", 
-      "sha":        "${{ github.sha }}", 
-      "run_number": "${{ github.run_number }}"
+      "name":           "${{ github.event.repository.name }}",
+      "ref":            "${{ github.ref }}", 
+      "sha":            "${{ github.sha }}", 
+      "run_number":     "${{ github.run_number }}",
+      "default_branch": "${{ github.event.repository.default_branch }}",
+      "ref_name":       "${{ github.ref_name }}",
+      "url":            "${{ github.event.repository.html_url }}"
     }
   TARGETPY: "3.13"
   TARGETOS: "ubuntu-latest"
@@ -60,33 +62,33 @@ jobs:
       - name: Python dependencies
         shell: bash
         run: |
-            uv sync --no-managed-python
+          uv sync --no-managed-python
 
       - name: Checks & Balances
         shell: bash
         run: |
-            uv run python support/checks-and-balances.py
+          uv run python support/checks-and-balances.py
 
       - name: Run Python checks (ruff)
         shell: bash
         run: |
-            uv run ruff check src tests
-            uv run ruff format --check src tests
+          uv run ruff check src tests
+          uv run ruff format --check src tests
 
       - name: Run Python checks (mypy)
         shell: bash
         env:
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
         run: |
-            uv run mypy src tests \
-              --no-incremental --xslt-html-report $OUTDIR/mypy
+          uv run mypy src tests \
+            --no-incremental --xslt-html-report $OUTDIR/mypy
 
       - name: Run Python checks (tests)
         shell: bash
         env:
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
         run: |
-          py.test \
+          uv run pytest -vvs -l \
               --cov=${{ env.PACKAGE }} \
               --cov-report=html:$OUTDIR/coverage --cov-report=xml:$OUTDIR/coverage.xml \
               --junitxml=$OUTDIR/junit/junit.xml --html=$OUTDIR/junit/junit.html --self-contained-html \
