@@ -75,6 +75,7 @@ def process_options(options: Namespace) -> None:
     else:
         log.debug("github definition from GITHUB_DUMP: %s", os.environ.get("GITHUB_DUMP", "N/A"))
         options.github = json.loads(os.environ["GITHUB_DUMP"])
+    breakpoint()
 
     options.__dict__["dryrun"] = options.__dict__.pop("dry_run")
 
@@ -128,6 +129,7 @@ def get_new_beta_number(name: str, version: str) -> int:
 @command()
 @clickwrap("default", add_arguments, process_options)
 def main(args: Namespace) -> None:
+    sys.exit(1)
     runc = Runner(verbose=args.verbose)
     gitx = Git.new(verbose=args.verbose, workdir=Path.cwd())
 
