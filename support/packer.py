@@ -1,6 +1,11 @@
 #!/usr/bin/env python
-# 1. process the script header
-# 2. use wheel.wheelfile to pack it
+# /// script
+# requires-python = ">=3.13"
+# dependencies = [
+#   "acbox",
+# ]
+# ///
+
 
 import contextlib
 import logging
@@ -13,7 +18,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 import click
 
 import acbox.packer
-from acbox.cli2 import TypeFn, clickwrapper
+from acbox.clickwrapper import MainFn, clickwrap, command
 
 DEPS = {
     # uv tree --package rich
@@ -69,7 +74,7 @@ def add_dir(zfp: ZipFile, path: Path) -> None:
             zfp.write(Path(root) / file, str(base / file))
 
 
-def add_arguments(fn: TypeFn) -> TypeFn:
+def add_arguments(fn: MainFn) -> MainFn:
     click.argument("script", type=click.Path(exists=True, path_type=Path))(fn)
     click.option("-o", "--output", default="dist/")(fn)
     return fn
@@ -82,10 +87,11 @@ def process_options(args: Namespace) -> None:
         args.output = Path(args.output)
 
 
-@click.command()
-@clickwrapper(add_arguments, process_options, verbose_flag=True)
+@command()
+@clickwrap("default", add_arguments, process_options)
 @click.option("-x", "--executable", is_flag=True)
 def main(args: Namespace) -> None:
+    breakpoint()
     log.info("creating package out of '%s'", args.script)
     log.info("output %s", args.output)
 
