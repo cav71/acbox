@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import dataclasses as dc
 import functools
-import itertools
+import sys
 from enum import IntEnum, auto
+from typing import TextIO
 
 
 class S(IntEnum):
@@ -18,7 +19,7 @@ class Record:
     status: S
     group: str  # kry to group the record under
     key: str
-    report: str = ""
+    report: str | list[str] = ""
 
 
 @dc.dataclass
@@ -71,14 +72,8 @@ def dumps(report: list[Record], sorted_groups: bool = True) -> str:
 
     width = max(len(record.key) for record in report)
 
-    def bygroup(fn, items):
-        return fn(items, key=lambda r: r.group)
-
-    def nosorted(items, key):
-        return items
-
-    for group, itrecords in bygroup(itertools.groupby, bygroup(nosorted, report)):
-        records = list(itrecords)
+    for group in list({r.group: 1 for r in report}):
+        records = [r for r in report if r.group == group]
         status = resolve(set(record.status for record in records))
         result.append(f"{color(status)} {group}")
         start = " " * 4 + " " * width
@@ -96,19 +91,19 @@ def dumps(report: list[Record], sorted_groups: bool = True) -> str:
     return "\n".join(result)
 
 
-def print_report(report: list[Record], sorted_groups: bool = True) -> int:
+def print_report(report: list[Record], sorted_groups: bool = True, file: TextIO = sys.stdout) -> int:
     errors = sum(r.status == S.FAILED for r in report)
     warnings = sum(r.status == S.WARN for r in report)
-    print(dumps(report, sorted_groups))
+    print(dumps(report, sorted_groups), file=file)
     if errors:
         t = ColorText("FAILED", S.FAILED)
-        print(f"{t} found {errors} errors, and {warnings} warnings")
+        print(f"{t} found {errors} errors, and {warnings} warnings", file=file)
     elif warnings:
         t = ColorText("WARN", S.WARN)
-        print(f"{t} found {warnings} warnings")
+        print(f"{t} found {warnings} warnings", file=file)
     else:
         t = ColorText("OK", S.OK)
-        print(f"{t}")
+        print(f"{t}", file=file)
     return min(int(sum(r.status == S.FAILED for r in report)), 1)
 
 
