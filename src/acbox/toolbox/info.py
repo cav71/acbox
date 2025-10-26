@@ -33,7 +33,7 @@ def check_environ(group: str) -> list[Record]:
         "MANPATH": lambda value: value.split(os.pathsep),
         "DIRENV_DIFF": lambda key, value: chunk(value, 70),
         "DIRENV_WATCHES": lambda key, value: chunk(value, 70),
-        "LS_COLORS": lambda value: chunk(value, 70),
+        "LS_COLORS": lambda key, value: chunk(value, 70),
         lambda key: key.startswith("GITHUB_"): None,
     }
     result = []
