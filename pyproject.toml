@@ -65,7 +65,7 @@ Issues = "https://github.com/cav71/acbox"
 Documentation = "https://github.com/cav71/acbox"
 
 [project.scripts]
-acbox = "acbox.maincli:main"
+acbox-toolbox = "acbox.toolbox.main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
