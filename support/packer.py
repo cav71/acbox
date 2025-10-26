@@ -75,8 +75,10 @@ def add_dir(zfp: ZipFile, path: Path) -> None:
 
 
 def add_arguments(fn: MainFn) -> MainFn:
-    click.argument("script", type=click.Path(exists=True, path_type=Path))(fn)
-    click.option("-o", "--output", default="dist/")(fn)
+    fn = click.argument("dependencies", nargs=-1)(fn)
+    fn = click.argument("script", type=click.Path(exists=True, path_type=Path))(fn)
+    fn = click.option("-x", "--executable", is_flag=True)(fn)
+    fn = click.option("-o", "--output", default="dist/")(fn)
     return fn
 
 
@@ -89,37 +91,42 @@ def process_options(args: Namespace) -> None:
 
 @command()
 @clickwrap("default", add_arguments, process_options)
-@click.option("-x", "--executable", is_flag=True)
 def main(args: Namespace) -> None:
-    breakpoint()
     log.info("creating package out of '%s'", args.script)
     log.info("output %s", args.output)
 
-    subdir = None
+    dependencies = [Path(d) if Path(d).exists() else d for d in args.dependencies]
+
     if subdirs := list((args.script.parent / "src").glob("*")):
         if len(subdirs) != 1:
             raise RuntimeError(f"cannot process src dirs in {args.script.parent}")
-        subdir = subdirs[0]
+        dependencies.append(subdirs[0])
+        log.debug("added sibling search subdir %s", dependencies[-1])
+
+    # dependencies from script PEP 723
+    embedded_dependencies = (acbox.packer.read_header(args.script) or {}).get("dependencies", [])
+    for dependency in embedded_dependencies:
+        if dependency in DEPS:
+            log.debug("adding subdependencies for '%s': %s", dependency, ", ".join(DEPS[dependency]))
+            dependencies.extend(DEPS[dependency])
+        dependencies.append(dependency)
+
+    dependencies = [MAPPER.get(dep, dep) for dep in dict.fromkeys(dependencies)]  # type: ignore
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
-
-    dependencies = set()
-    for dep in acbox.packer.read_header(args.script).get("dependencies", []):
-        dependencies.add(dep)
-        dependencies.update(DEPS.get(dep, set()))
-
     with openpyz(args.output) as zfp:
         zfp.write(args.script, "__main__.py")
-        if subdir:
-            add_dir(zfp, subdir)
-        for dependency in sorted(dependencies):
-            mod = __import__(MAPPER.get(dependency, dependency))
-            path = Path(str(mod.__file__))
-            log.info("adding dep %s from %s", dependency, relpath(path))
-            if path.name == "__init__.py":
-                add_dir(zfp, path.parent)
+
+        for dependency in dependencies:
+            if isinstance(dependency, Path):
+                path = dependency
             else:
-                raise RuntimeError("unsupported")
+                path = Path(__import__(dependency).__file__)  # type: ignore
+                log.info("adding dep %s from %s", dependency, relpath(path))
+                if path.name != "__init__.py":
+                    raise RuntimeError("unsupported")
+                path = path.parent
+            add_dir(zfp, path)
 
     if args.executable:
         with inplace(args.output) as (fp, data):
