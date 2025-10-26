@@ -92,6 +92,10 @@ def command():
     return cloup.command(formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()))
 
 
+def group():
+    return cloup.group(formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()), show_subcommand_aliases=True)
+
+
 if __name__ == "__main__":
     log = logging.getLogger(__name__)
 
