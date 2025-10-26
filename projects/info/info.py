@@ -5,6 +5,7 @@
 # "acbox",
 # ]
 # ///
+# TODO replace with: import acbox.toolbox.info
 import os
 import platform
 import shutil
@@ -12,10 +13,6 @@ import sys
 from pathlib import Path
 
 from acbox.ureporting import Record, S, check, print_report
-
-
-def githubs(key, value):
-    return key.startswith("GITHUB_")
 
 
 @check
@@ -27,8 +24,11 @@ def check_sys(group) -> list[Record]:
 
 
 @check
-def check_plaform(group: str) -> Record:
-    return Record(S.NOSTATUS, group, "arch", str(platform.architecture(sys.executable)))
+def check_plaform(group: str) -> list[Record]:
+    return [
+        Record(S.NOSTATUS, group, "arch", str(platform.architecture(sys.executable))),
+        Record(S.NOSTATUS, group, "system", str(platform.uname().system)),
+    ]
 
 
 @check
@@ -41,6 +41,7 @@ def check_environ(group: str) -> list[Record]:
         "MANPATH": lambda value: value.split(os.pathsep),
         "DIRENV_DIFF": lambda key, value: chunk(value, 70),
         "DIRENV_WATCHES": lambda key, value: chunk(value, 70),
+        "LS_COLORS": lambda value: chunk(value, 70),
         lambda key: key.startswith("GITHUB_"): None,
     }
     result = []
@@ -101,7 +102,7 @@ def check_envfile(group: str) -> list[Record]:
     return result
 
 
-def main():
+def main() -> int:
     # see ~/Projects/dockers/tools/scripts/info.py
     report = []
     report.extend(check_sys("sys"))
@@ -109,8 +110,8 @@ def main():
     report.extend(check_environ("environ.env"))
     report.extend(check_executables("environ.exe"))
     report.extend(check_envfile("envfile"))
-    sys.exit(print_report(report))
+    return print_report(report)
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

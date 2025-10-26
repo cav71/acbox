@@ -101,7 +101,6 @@ def main() -> int:
     report.extend(check_environ("environ.env"))
     report.extend(check_executables("environ.exe"))
     report.extend(check_envfile("envfile"))
-    report.append(Record(S.FAILED, "platform", "key-4", "message-4"))
     return print_report(report)
 
 
