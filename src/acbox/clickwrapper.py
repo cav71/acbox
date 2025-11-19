@@ -6,7 +6,7 @@ from typing import Any, Callable, Sequence
 import click
 import cloup
 
-MainFn = Callable[[Namespace], Any]
+MainFn = Callable[[Namespace], int | None]
 AddArgFn = Callable[[MainFn], MainFn]
 ProcessOptionsFn = Callable[[Namespace], None | Namespace]
 
@@ -61,8 +61,9 @@ def clickwrapper(
                 raise click.UsageError(msg)
 
             options.error = error
-
-            return fn(options)
+            if ret := fn(options):
+                raise click.exceptions.Exit(ret)
+            return ret
 
         return __clickwrapper
 
