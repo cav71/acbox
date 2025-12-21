@@ -6,6 +6,7 @@
 # ]
 # ///
 # TODO replace with: import acbox.toolbox.info
+import inspect
 import os
 import platform
 import shutil
@@ -38,27 +39,25 @@ def check_environ(group: str) -> list[Record]:
 
     special = {
         "PATH": lambda key, value: value.split(os.pathsep),
-        "MANPATH": lambda value: value.split(os.pathsep),
+        "MANPATH": lambda key, value: value.split(os.pathsep),
         "DIRENV_DIFF": lambda key, value: chunk(value, 70),
         "DIRENV_WATCHES": lambda key, value: chunk(value, 70),
-        "LS_COLORS": lambda value: chunk(value, 70),
+        "LS_COLORS": lambda key, value: chunk(value, 70),
         lambda key: key.startswith("GITHUB_"): None,
     }
+    for key, fn in special.items():
+        if callable(fn) and set(inspect.signature(fn).parameters) != {"key", "value"}:
+            raise RuntimeError(f"invalid signature for function at {key=}")
     result = []
     for key, value in sorted(os.environ.items(), key=lambda k: k[0].upper()):
         if key in {"_"}:
             continue
         for keyfn, valuefn in special.items():
-            if isinstance(keyfn, str) and key == keyfn:
-                if callable(valuefn):
-                    value = valuefn(key, value)  # type: ignore
-                elif valuefn is None:
-                    continue
-                else:
-                    value = valuefn
-            if callable(keyfn) and keyfn(key):
+            if (callable(keyfn) and keyfn(key)) or (keyfn == key):
                 value = valuefn(key, value) if callable(valuefn) else valuefn  # type: ignore
-        if not value:
+            else:
+                continue
+        if value is None:
             continue
         result.append(Record(S.NOSTATUS, group, key, value))
     return result
