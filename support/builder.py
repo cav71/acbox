@@ -179,6 +179,9 @@ def main(args: Namespace) -> None:
         count=count,
     )
 
+    if args.beta and gdata.branch != (current := f"beta/{version}"):
+        args.error(f"version is '{version}', but building in branch {gdata.branch} (expected {current})")
+
     with backups() as save:
         save(pyproject)
         lines = pyproject.read_text().split("\n")

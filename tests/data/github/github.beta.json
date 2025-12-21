@@ -1,0 +1,13 @@
+{
+  "event": {
+    "repository": {
+      "name": "acbox",
+      "default_branch": "main",
+      "html_url": "https://github.com/cav71/acbox"
+    }
+  },
+  "ref": "refs/heads/beta/0.0.0",
+  "sha": "3733cf6548fcbebffd97a6eabef23690f6decbe7",
+  "run_number": "7",
+  "ref_name": "beta/0.0.0"
+}
