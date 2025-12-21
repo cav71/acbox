@@ -102,7 +102,6 @@ def check_envfile(group: str) -> list[Record]:
 
 
 def main() -> int:
-    # see ~/Projects/dockers/tools/scripts/info.py
     report = []
     report.extend(check_sys("sys"))
     report.extend(check_plaform("platform"))

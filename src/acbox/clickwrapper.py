@@ -90,7 +90,9 @@ def clickwrap(
 
 
 def command():
-    return cloup.command(formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()))
+    return cloup.command(
+        formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()), context_settings={"show_default": True}
+    )
 
 
 def group():
