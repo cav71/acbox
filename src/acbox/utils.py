@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from importlib.util import module_from_spec, spec_from_file_location
+from io import StringIO
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -8,9 +9,12 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 
 
-def loadmod(path: Path | str) -> ModuleType:
+def loadmod(path: Path | str | StringIO) -> ModuleType:
     txt = None
-    if (parsed := urlparse(str(path))).scheme in {"http", "https"}:
+    if isinstance(path, StringIO):
+        txt = path.getvalue()
+        path = "unknown"
+    elif (parsed := urlparse(str(path))).scheme in {"http", "https"}:
         txt = str(urlopen(str(path)).read(), encoding="utf-8")
     elif parsed.scheme in {"file"}:
         txt = Path(parsed.netloc).read_text()
