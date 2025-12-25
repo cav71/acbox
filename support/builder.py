@@ -130,7 +130,7 @@ def get_new_beta_number(name: str, version: str) -> int:
 @clickwrap("default", add_arguments, process_options)
 def main(args: Namespace) -> None:
     runc = Runner(verbose=args.verbose)
-    gitx = Git.new(verbose=args.verbose, workdir=Path.cwd())
+    gitx = Git.new(Path.cwd(), verbose=args.verbose)
 
     log.info("python executable (%s) %s", (runc([sys.executable, "-V"], capture=True) or "").strip(), sys.executable)
     log.info("acbox from %s", acbox.__file__)
