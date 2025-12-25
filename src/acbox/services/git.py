@@ -43,6 +43,27 @@ class Git:
         out = self.runner(args, capture=True) or ""
         return (out.decode("utf-8") if isinstance(out, bytes) else out).strip()
 
+    # from here all "command" wrappers
+
+    def remotes(self) -> dict[str, dict[str, str | set[str]]]:
+        # origin	git@github.com:cav71/lektor.git (fetch)
+        result: dict[tuple[str, str], set[str]] = {}
+        out = self(
+            [
+                "remote",
+                "-v",
+            ]
+        )
+        for line in out.strip().split("\n"):
+            if len(elems := line.strip().split()) != 3:
+                continue
+            name, url, action = elems
+            if (key := (name, url)) not in result:
+                result[key] = set()
+            result[key].add(action)
+
+        return {n: {"origin": u, "actions": a} for (n, u), a in result.items()}
+
     def branch(self, name: str = "HEAD") -> str:
         return self(["rev-parse", "--abbrev-ref", name])
 
