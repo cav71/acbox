@@ -4,7 +4,8 @@ import dataclasses as dc
 import functools
 import sys
 from enum import IntEnum, auto
-from typing import TextIO
+from pathlib import Path
+from typing import Sequence, TextIO
 
 
 class S(IntEnum):
@@ -16,9 +17,9 @@ class S(IntEnum):
 
 @dc.dataclass
 class Record:
-    status: S
-    group: str  # kry to group the record under
-    key: str
+    status: S  # the status for teh record
+    group: str  # group all records with the same group in output
+    key: str  # unique key inside a group
     report: str | list[str] = ""
 
 
@@ -113,7 +114,22 @@ def check(fn):
         result = fn(*args, **kwargs)
         return result if isinstance(result, list) else [result]
 
+    _fn._is_check = True
     return _fn
+
+
+def load_external_checks(paths: Sequence[str | Path]) -> list[Record]:
+    from acbox.utils import loadmod
+
+    result = []
+    for path in paths:
+        mod = loadmod(Path(path))
+        for name in dir(mod):
+            fn = getattr(mod, name)
+            if not (callable(fn) and getattr(fn, "_is_check", False)):
+                continue
+            result.extend(fn())
+    return result
 
 
 if __name__ == "__main__":

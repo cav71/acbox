@@ -36,6 +36,13 @@ CLICKWRAPPERS: dict[str, tuple[AddArgFn | None, ProcessOptionsFn | None]] = {
 }
 
 
+def validate_add_argument_function(wrapper: AddArgFn, fn: MainFn) -> MainFn:
+    fn1 = wrapper(fn)
+    if not callable(fn1):
+        raise RuntimeError(f"wrapper function {wrapper} doesn't return a callable")
+    return fn1
+
+
 def clickwrapper(
     add_arguments: AddArgFn | Sequence[AddArgFn] | None = None,
     process_options: ProcessOptionsFn | Sequence[ProcessOptionsFn] | None = None,
@@ -44,7 +51,7 @@ def clickwrapper(
         if add_arguments:
             wrappers = add_arguments if isinstance(add_arguments, Sequence) else [add_arguments]
             for wrapper in wrappers:
-                fn = wrapper(fn)
+                fn = validate_add_argument_function(wrapper, fn)
 
         @functools.wraps(fn)
         def __clickwrapper(*args, **kwargs):

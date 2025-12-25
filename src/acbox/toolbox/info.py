@@ -56,8 +56,8 @@ def check_environ(group: str) -> list[Record]:
 
 
 @check
-def check_executables(group: str) -> list[Record]:
-    exes = [
+def check_executables(group: str, paths: list[str | Path] | None = None) -> list[Record]:
+    exes = paths or [
         "git",
         "python",
         "python3",
@@ -70,9 +70,9 @@ def check_executables(group: str) -> list[Record]:
             bins = [f"found in {found}"]
             if found != str(Path(found).resolve()):
                 bins = [*bins, f"({Path(found).resolve()})"]
-            result.append(Record(S.NOSTATUS, group, exe, bins))
+            result.append(Record(S.NOSTATUS, group, str(exe), bins))
         else:
-            result.append(Record(S.NOSTATUS, group, exe, "not found"))
+            result.append(Record(S.NOSTATUS, group, str(exe), "not found"))
     return result
 
 

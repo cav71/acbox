@@ -6,82 +6,14 @@
 # ]
 # ///
 # TODO replace with: import acbox.toolbox.info
-import inspect
-import os
+import dataclasses as dc
 import platform
 import shutil
 import sys
 from pathlib import Path
 
-from acbox.ureporting import Record, S, check, print_report
-
-
-@check
-def check_sys(group) -> list[Record]:
-    return [
-        Record(S.NOSTATUS, group, "executable", sys.executable),
-        Record(S.NOSTATUS, group, "version", str(sys.version_info)),
-    ]
-
-
-@check
-def check_plaform(group: str) -> list[Record]:
-    return [
-        Record(S.NOSTATUS, group, "arch", str(platform.architecture(sys.executable))),
-        Record(S.NOSTATUS, group, "system", str(platform.uname().system)),
-    ]
-
-
-@check
-def check_environ(group: str) -> list[Record]:
-    def chunk(txt, n):
-        return [txt[i : i + n] for i in range(0, len(txt), n)]
-
-    special = {
-        "PATH": lambda key, value: value.split(os.pathsep),
-        "MANPATH": lambda key, value: value.split(os.pathsep),
-        "DIRENV_DIFF": lambda key, value: chunk(value, 70),
-        "DIRENV_WATCHES": lambda key, value: chunk(value, 70),
-        "LS_COLORS": lambda key, value: chunk(value, 70),
-        lambda key: key.startswith("GITHUB_"): None,
-    }
-    for key, fn in special.items():
-        if callable(fn) and set(inspect.signature(fn).parameters) != {"key", "value"}:
-            raise RuntimeError(f"invalid signature for function at {key=}")
-    result = []
-    for key, value in sorted(os.environ.items(), key=lambda k: k[0].upper()):
-        if key in {"_"}:
-            continue
-        for keyfn, valuefn in special.items():
-            if (callable(keyfn) and keyfn(key)) or (keyfn == key):
-                value = valuefn(key, value) if callable(valuefn) else valuefn  # type: ignore
-            else:
-                continue
-        if value is None:
-            continue
-        result.append(Record(S.NOSTATUS, group, key, value))
-    return result
-
-
-@check
-def check_executables(group: str) -> list[Record]:
-    exes = [
-        "git",
-        "python",
-        "python3",
-        "pip",
-        "pip3",
-    ]
-    result = []
-    for exe in exes:
-        if found := shutil.which(exe):
-            bins = [f"found in {found}"]
-            if found != str(Path(found).resolve()):
-                bins = [*bins, f"({Path(found).resolve()})"]
-            result.append(Record(S.NOSTATUS, group, exe, bins))
-        else:
-            result.append(Record(S.NOSTATUS, group, exe, "not found"))
-    return result
+from acbox.toolbox import info as acbox_info
+from acbox.ureporting import Record, S, check, load_external_checks, print_report
 
 
 @check
@@ -101,13 +33,117 @@ def check_envfile(group: str) -> list[Record]:
     return result
 
 
+# def get_installed_using_pip(workdir: Path) -> dict[str, str]:
+#     output = runc(["pipenv", "run", "pip", "list", "--format", "json"], overrides={
+#         "PIP_NO_CACHE_DIR": "yes",
+#         "PIPENV_VENV_IN_PROJECT": "1",
+#     }, cwd=workdir)
+#
+#     result = {}
+#     for item in json.loads(output.strip()):
+#         key = item["name"].strip().lower()
+#         result[stripkey(key)] = item["version"]
+#     return result
+#
+#
+# def get_installed_using_pipenv(workdir: Path) -> dict[str, str]:
+#     output = runc(["pipenv", "requirements"], cwd=workdir).strip()
+#     packages = {}
+#     for line in output.split("\n"):
+#         # eg. lines like '-i url'
+#         if "-i " in line:
+#             continue
+#
+#         values = line
+#         if ";" in line:
+#             values = line.partition(";")[0]
+#         values = values.split("==")  # in requirements only ==
+#
+#         # eg.
+#         if line.count("@") == 2:
+#             values = line.split("@")[::2]
+#         elif match := (re.compile(r"(https|http|file)://(?P<url>[^ ;]+)").search(line)):
+#             # https://some.url/path/csv2ofx-some-weird--0.30.1-py2.py3-none-any.whl ; python_version >= '3.9'
+#             items = match.group("url").rpartition("/")[2].split("-")[:-3]
+#             values = "-".join(items[:-1]), items[-1]
+#
+#         name, version = values
+#         packages[stripkey(name)] = version
+#
+#     return packages
+# def check_installed_python_packages() -> Record:
+#     found_in_pip = get_installed_using_pip(WORKDIR)
+#     found_in_pipenv = get_installed_using_pipenv(WORKDIR)
+#     skip = {
+#         "pip": ("25.0.1", "N/A"),
+#         "instructor": ("1.7.9", "2b602c53679c5d6bce2048828df92a68359627dd"),
+#     }
+#     delta = diffdict(found_in_pip, found_in_pipenv, skip)
+#     if delta:
+#         msg = "\n".join(f"- {', '.join(d)}" for d in delta)
+#         return Record("difference between packages installed with pipenv and detected by pip", S.FAILED, msg)
+#     else:
+#         return Record("no difference between packages installed with pipenv and detected by pip", S.OK)
+#
+
+
+@check
+def check_missing_so_files(root: Path):
+    @dc.dataclass
+    class LSO:
+        missing: list[str] = dc.field(default_factory=list)
+        deps: dict[str, Path] = dc.field(default_factory=dict)
+
+    if (system := platform.uname().system) != "Linux":
+        # value expected for 'system' is 'Linux' but found 'Darwin'
+        return Record(S.NOSTATUS, "so-files", "unsupported", f"value expected for 'system' is 'Linux' but found '{system}'")
+
+    if not (ldd := shutil.which("ldd")):  # noqa: F841
+        return Record(S.FAILED, "so-files", "missing", "cannot find 'ldd' executable")
+
+    return Record(S.NOSTATUS, "so-files", "INCOMPLETE", "MUST FINISH")
+
+
+#     result = {}
+#     for path in root.rglob("*"):
+#         if not (path.name.endswith(".so") or os.access(path, os.X_OK)):
+#             continue
+#         if (txt := runc(["ldd", path], quiet=True)) is None:
+#             continue
+#         result[path] = lso = LSO()
+#
+#         for line in runc(["ldd", path]).split("\n"):
+#             if "=>" not in line:
+#                 continue
+#             name, target = [p.strip() for p in line.split("=>")]
+#             if target == "not found":
+#                 target = None
+#                 lso.missing.append(name)
+#             else:
+#                 target = target.partition(" ")[0]
+#                 lso.deps[name] = Path(target)
+#
+#     if any(lso.missing for lso in result.values()):
+#         lines = []
+#         for path, lso in result.items():
+#             if not lso.missing:
+#                 continue
+#             lines.append(f"{path} missing: {', '.join(lso.missing)}")
+#         return Record("missing .so files", "\n".join(lines))
+#
+#     # TODO check for libpython rpaths!
+#     return Record(".so files ok", S.OK)
+
+
 def main() -> int:
     report = []
-    report.extend(check_sys("sys"))
-    report.extend(check_plaform("platform"))
-    report.extend(check_environ("environ.env"))
-    report.extend(check_executables("environ.exe"))
+    report.extend(acbox_info.check_sys("sys"))
+    report.extend(acbox_info.check_plaform("platform"))
+    report.extend(acbox_info.check_environ("environ.env"))
+    report.extend(acbox_info.check_executables("environ.exe"))
     report.extend(check_envfile("envfile"))
+    report.extend(check_missing_so_files(Path.cwd()))
+    report.extend(load_external_checks(sys.argv[1:]))
     return print_report(report)
 
 
