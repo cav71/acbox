@@ -28,8 +28,8 @@ import tomllib
 import acbox
 from acbox.clickwrapper import MainFn, clickwrap, command
 from acbox.fileops import backups
-from acbox.git import Git
 from acbox.runner import Runner
+from acbox.services.git import Git
 
 log = logging.getLogger(__name__)
 
