@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import dataclasses as dc
-import subprocess
-import sys
 from pathlib import Path
-from typing import Sequence
+
+from ..runner import Paths, Runner
 
 
 @dc.dataclass
@@ -16,8 +15,9 @@ class GitBranch:
 @dc.dataclass
 class Git:
     worktree: Path
+    runner: Runner
     gitdir: Path | None = None
-    exe: str = "git"
+    exe: str | Path = "git"
 
     def __post_init__(self):
         if not self.gitdir:
@@ -26,32 +26,25 @@ class Git:
     def __repr__(self):
         return f"<{self.__class__.__name__} worktree={self.worktree}>"
 
-    def _run(self, cmd: str | Sequence[str | Path], **kwargs) -> str:
-        arguments = [self.exe, "--git-dir", self.gitdir, "--work-tree", self.worktree]
-        arguments.extend([cmd] if isinstance(cmd, (Path, str)) else cmd)
-        return subprocess.check_output([str(c) for c in arguments], encoding="utf-8")
+    @classmethod
+    def new(cls, worktree: Path, verbose: bool = False) -> Git:
+        worktree = worktree.expanduser().absolute()
+        runner = Runner(verbose=verbose, exe=["git", "--git-dir", f"{worktree}/.git"])
+        return cls(worktree, runner=runner)
 
     @classmethod
-    def init(cls, path: Path) -> Git:
-        path.mkdir(parents=True, exist_ok=True)
-        subprocess.check_call([cls.exe, "init", str(path)])
-        return cls(path)
+    def clone(cls, url: str, worktree: Path | None = None, verbose: bool = False, *args) -> Git:
+        git = cls.new(worktree or Path.cwd(), verbose=verbose)
+        git.worktree.parent.mkdir(parents=True, exist_ok=True)
+        git.runner(["clone", *(args or []), url, git.worktree])
+        return git
 
-    @classmethod
-    def clone(cls, url: str, path: Path, branch: str = "", single: bool = False) -> Git:
-        arguments: Sequence[str | Path] = [cls.exe, "clone", url]
-        if branch:
-            arguments = [*arguments, "--branch", branch]
-        if single:
-            arguments = [*arguments, "--single-branch"]
-        arguments = [*arguments, path]
-        subprocess.check_call([str(a) for a in arguments])
-        return Git(path)
+    def __call__(self, args: Paths) -> str:
+        out = self.runner(args, capture=True) or ""
+        return (out.decode("utf-8") if isinstance(out, bytes) else out).strip()
 
-    def branch(self):
-        return self._run(["branch", "--show-current"]).strip()
+    def branch(self, name: str = "HEAD") -> str:
+        return self(["rev-parse", "--abbrev-ref", name])
 
-
-if __name__ == "__main__":
-    git = Git(Path.cwd())
-    print(git._run(sys.argv[1:]))
+    def commits_on_branch(self, main: str = "origin/main") -> int:
+        return int(self(["rev-list", "--count", main]))

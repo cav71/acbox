@@ -1,11 +1,11 @@
 from acbox.services.git import Git
 
 
-def test_init(tmp_path):
-    git = Git.init(tmp_path / "wow")
-    assert git.worktree.exists() and git.worktree.is_dir()
-    assert git.gitdir.exists() and git.gitdir.is_dir()
+def test_new(tmp_path):
+    git = Git.new(tmp_path / "wow")
     assert git.gitdir == (git.worktree / ".git")
+    assert not git.worktree.exists()
+    assert not git.worktree.exists()
 
 
 def test_clone(tmp_path):
@@ -13,6 +13,7 @@ def test_clone(tmp_path):
 
     assert git.worktree.exists() and git.worktree.is_dir()
     assert git.gitdir.exists() and git.gitdir.is_dir()
+    assert git.gitdir.relative_to(tmp_path)
     assert git.gitdir == (git.worktree / ".git")
     assert (git.worktree / "support/builder.py").exists()
     assert git.branch() == "main"
