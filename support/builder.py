@@ -134,7 +134,7 @@ def main(args: Namespace) -> None:
 
     log.info("python executable (%s) %s", (runc([sys.executable, "-V"], capture=True) or "").strip(), sys.executable)
     log.info("acbox from %s", acbox.__file__)
-    log.info("git client using workdir %s", gitx.workdir)
+    log.info("git client using worktree %s", gitx.worktree)
     log.info("current branch is '%s'", gitx.branch())
 
     # X default branch
