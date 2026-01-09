@@ -2,36 +2,61 @@
 # /// script
 # requires-python = ">=3.13"
 # dependencies = [
-#   "acbox",
 #   "build",
 #   "click",
-#   "cloup",
+#   "httpx",
 #   "jinja2",
 # ]
 # ///
 from __future__ import annotations
 
+import contextlib
 import dataclasses as dc
+import functools
 import json
 import logging
 import os
 import re
+import shutil
+import subprocess
 import sys
 from argparse import Namespace
 from pathlib import Path
-from typing import Literal
+from typing import Callable, Generator, Literal
 
 import click
+import httpx
 import jinja2
 import tomllib
 
-import acbox
-from acbox.clickwrapper import MainFn, command
-from acbox.fileops import backups
-from acbox.runner import Runner
-from acbox.services.git import Git
+MainFn = Callable[[Namespace], int | None]
+AddArgFn = Callable[[MainFn], MainFn]
+ProcessOptionsFn = Callable[[Namespace], None | Namespace]
 
 log = logging.getLogger(__name__)
+
+
+@contextlib.contextmanager
+def backups() -> Generator[Callable[[Path | str], tuple[Path, Path]], None, None]:
+    pathlist: list[Path] = []
+
+    def save(path: Path | str) -> tuple[Path, Path]:
+        nonlocal pathlist
+        original = Path(path).expanduser().absolute()
+        backup = original.parent / f"{original.name}.bak"
+        if backup.exists():
+            raise RuntimeError("backup file present", backup)
+        shutil.copy(original, backup)
+        pathlist.append(backup)
+        return original, backup
+
+    try:
+        yield save
+    finally:
+        for backup in pathlist:
+            original = backup.with_suffix("")
+            original.unlink()
+            shutil.move(backup, original)
 
 
 @dc.dataclass
@@ -51,7 +76,37 @@ class GData:
     count: int | None
 
 
-def add_arguments(fn: MainFn) -> MainFn:
+@dc.dataclass
+class Runner:
+    exe: list[str] | None = None
+    verbose: bool = False
+
+    def __call__(self, args, verbose: bool | None = None, capture=False):
+        verbose = self.verbose if verbose is None else verbose
+        cmd = [str(c) for c in [*(self.exe or []), *args]]
+        if capture:
+            return subprocess.check_output(cmd, encoding="utf-8", stderr=None if verbose else subprocess.DEVNULL)
+        return subprocess.check_call(
+            cmd, encoding="utf-8", stderr=None if verbose else subprocess.DEVNULL, stdout=None if verbose else subprocess.DEVNULL
+        )
+
+
+@dc.dataclass
+class Git:
+    worktree: Path
+    runner: Runner
+
+    @classmethod
+    def new(cls, worktree: Path, verbose: bool = False):
+        return cls(worktree, Runner(exe=["git", "--git-dir", f"{worktree}/.git"], verbose=verbose))
+
+    def branch(self):
+        return self.runner(["branch", "--show-current"], capture=True).strip()
+
+
+def add_arguments(fn):
+    fn = click.option("-q", "--quiet", count=True)(fn)
+    fn = click.option("-v", "--verbose", count=True)(fn)
     fn = click.option("-p", "--python", type=click.Path(exists=True, path_type=Path))(fn)
     fn = click.option("-n", "--dry-run", is_flag=True)(fn)
     fn = click.option("--release", is_flag=True)(fn)
@@ -62,7 +117,17 @@ def add_arguments(fn: MainFn) -> MainFn:
 
 
 def process_options(options: Namespace) -> None:
-    breakpoint()
+    verbose = (options.__dict__.pop("verbose") if "verbose" in options.__dict__ else 0) - (
+        options.__dict__.pop("quiet") if "quiet" in options.__dict__ else 0
+    )
+    level = {-1: logging.WARNING, 0: logging.INFO, 1: logging.DEBUG}[min(max(verbose, -1), 1)]
+    logging.basicConfig(level=level)
+    options.verbose = level > logging.INFO
+
+    def error(msg):
+        raise click.UsageError(msg)
+
+    options.error = error
     if options.release and options.beta:
         raise click.BadParameter("--release and --beta are mutually exclusive")
     elif not (options.release or options.beta):
@@ -79,6 +144,25 @@ def process_options(options: Namespace) -> None:
         options.github = json.loads(os.environ["GITHUB_DUMP"])
 
     options.__dict__["dryrun"] = options.__dict__.pop("dry_run")
+
+
+def command():
+    def _clickwrapper(fn: MainFn):
+        @functools.wraps(fn)
+        def _fn(fn: MainFn):
+            def __fn(*args, **kwargs):
+                options = Namespace(**kwargs)
+                process_options(options)
+                return fn(options)
+
+            return __fn
+
+        fn = _fn(fn)
+        fn = click.command()(fn)
+        fn = add_arguments(fn)
+        return fn
+
+    return _clickwrapper
 
 
 def find_version(pyproject: Path) -> tuple[int, str]:
@@ -108,10 +192,8 @@ def parse_ref(ref: str, default_branch: str) -> tuple[Literal["beta", "release",
         return ("main", None)
     raise RuntimeError(f"cannot parse {ref=}")
 
-    return None
 
-
-def process_inplace(path: Path, gdata: GData):
+def process_inplace(path: Path, gdata: GData) -> None:
     env = jinja2.Environment()
     env.globals = dict(gdata=gdata)
     tmpl = env.from_string(path.read_text())
@@ -119,21 +201,18 @@ def process_inplace(path: Path, gdata: GData):
 
 
 def get_new_beta_number(name: str, version: str) -> int:
-    from urllib.request import urlopen
-
-    index = f"https://pypi.org/pypi/{name}/json"
-    txt = json.loads(urlopen(index, timeout=20).read())
+    txt = httpx.get(f"https://pypi.org/pypi/{name}/json").json()
     values = [int(r.partition("b")[2]) for r in txt["releases"] if r.startswith(f"{version}b")]
     return (max(values) + 1) if values else 0
 
 
-@command("fancy", add_arguments, process_options)
+@command()
 def main(args: Namespace) -> None:
     runc = Runner(verbose=args.verbose)
+
     gitx = Git.new(Path.cwd(), verbose=args.verbose)
 
     log.info("python executable (%s) %s", (runc([sys.executable, "-V"], capture=True) or "").strip(), sys.executable)
-    log.info("acbox from %s", acbox.__file__)
     log.info("git client using worktree %s", gitx.worktree)
     log.info("current branch is '%s'", gitx.branch())
 
@@ -162,6 +241,7 @@ def main(args: Namespace) -> None:
         newversion = f"{version}b{count}"
     else:
         raise RuntimeError("un-handled branch!")
+
     log.info("releasing for '%s': %s -> %s", kind, version, newversion)
     log.debug("ref = %s, count = %s, newversion = %s", args.github["ref"], count, newversion)
 

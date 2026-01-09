@@ -58,7 +58,6 @@ def setup(
     success = "completed"
     errormsg = ""
     show_timing = True
-    # breakpoint()
     try:
         if "parser" not in sig.parameters:
             args = parser.parse_args()
