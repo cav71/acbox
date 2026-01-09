@@ -111,6 +111,7 @@ jobs:
         if: ${{ (matrix.python-version == env.TARGETPY) && (matrix.os == env.TARGETOS) }}
         env:
           GITHUB_DUMP: ${{ toJson(github) }}
+          PYTHONPATH: src
         run: |
             uv run support/builder.py --release \
               src/acbox/__init__.py \
