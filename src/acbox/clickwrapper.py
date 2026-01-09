@@ -5,6 +5,7 @@ from typing import Any, Callable, Sequence
 
 import click
 import cloup
+from rich.logging import RichHandler
 
 MainFn = Callable[[Namespace], int | None]
 AddArgFn = Callable[[MainFn], MainFn]
@@ -16,23 +17,33 @@ def add_loglevel(fn: MainFn) -> MainFn:
     return fn
 
 
-def process_loglevel(options: Namespace, verbose_flag: bool = False) -> Namespace:
-    verbose = options.__dict__.pop("verbose") - options.__dict__.pop("quiet")
-    level = max(min(verbose, 1), -1)
-
-    # console = Console(theme=Theme({"log.time": "cyan"}))
-    logging.basicConfig(
-        level={-1: logging.WARNING, 0: logging.INFO, 1: logging.DEBUG}[level],
-        # datefmt="[%X]",
-        # handlers=[RichHandler(console=console, rich_tracebacks=True)]
+def _resolve_log_level(options: Namespace) -> int:
+    verbose = (options.__dict__.pop("verbose") if "verbose" in options.__dict__ else 0) - (
+        options.__dict__.pop("quiet") if "quiet" in options.__dict__ else 0
     )
+    verbose = max(min(verbose, 1), -1)
+    level = {-1: logging.WARNING, 0: logging.INFO, 1: logging.DEBUG}[verbose]
+    options.verbose = level > logging.INFO
+    return level
 
-    options.verbose = verbose
+
+def process_loglevel(options: Namespace) -> Namespace:
+    level = _resolve_log_level(options)
+    logging.basicConfig(level=level)
+    return options
+
+
+def process_loglevel_fancy(options: Namespace, verbose_flag: bool = False) -> Namespace:
+    level = _resolve_log_level(options)
+    logging.basicConfig(
+        level=level, format="%(asctime)s %(message)s", handlers=[RichHandler(show_time=False, markup=True, rich_tracebacks=True)]
+    )
     return options
 
 
 CLICKWRAPPERS: dict[str, tuple[AddArgFn | None, ProcessOptionsFn | None]] = {
     "default": (add_loglevel, process_loglevel),
+    "fancy": (add_loglevel, process_loglevel_fancy),
 }
 
 
@@ -96,14 +107,32 @@ def clickwrap(
     return clickwrapper(args0, args1)
 
 
-def command():
-    return cloup.command(
-        formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()), context_settings={"show_default": True}
-    )
+def command(
+    kind: str | None = "default", add_arguments: AddArgFn | None = None, process_options: ProcessOptionsFn | None = None
+) -> Callable[[MainFn], Any]:
+    def decorator(func: MainFn) -> Callable[[MainFn], None]:
+        adeco = clickwrap(kind, add_arguments, process_options)(func)
+        bdeco = cloup.command(
+            formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()), context_settings={"show_default": True}
+        )(adeco)
+        return bdeco
+
+    return decorator
 
 
 def group():
-    return cloup.group(formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()), show_subcommand_aliases=True)
+    def _fn(fn):
+        g = cloup.group(formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()), show_subcommand_aliases=True)
+        group = g(fn)
+        group._command = group.command
+        group.command = functools.partial(
+            group._command,
+            formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()),
+            context_settings={"show_default": True},
+        )
+        return group
+
+    return _fn
 
 
 if __name__ == "__main__":
