@@ -50,7 +50,6 @@ coverage:  ## run all tests with coverage
 .PHONY: clean
 clean:  ## clean all artifacts
 	@rm -rf .dmypy.json src/acbox.egg-info dist $(BUILDDIR)
-	@rm -rf projects/info/dist
-	@rm -f tests/data/github/github.*.json
+	@rm -rf projects/info/dist projects/repotool/dist
 	@python support/clean.py $(SOURCES)
 	@echo "$(GDOT) cleaned"

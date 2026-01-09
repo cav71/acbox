@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 
 
-def loadmod(path: Path | str | StringIO) -> ModuleType:
+def loadmod(path: Path | str | StringIO, variables: dict[str, Any] | None = None) -> ModuleType:
     txt = None
     if isinstance(path, StringIO):
         txt = path.getvalue()
@@ -21,7 +21,10 @@ def loadmod(path: Path | str | StringIO) -> ModuleType:
 
     if txt is not None:
         mod = ModuleType(str(path).rpartition("/")[2])
-        exec(txt, mod.__dict__)
+        mod.__dict__.update(variables or {})
+        mod.__file__ = str(path)
+        code_obj = compile(txt, filename=str(path), mode="exec")
+        exec(code_obj, mod.__dict__)
         return mod
 
     spec = spec_from_file_location(Path(path).name, Path(path))

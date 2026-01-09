@@ -1,5 +1,7 @@
 import io
 
+import pytest
+
 from acbox import utils
 
 
@@ -8,6 +10,18 @@ def test_load_mod(resolver):
 
     mod = utils.loadmod(path)
     assert callable(mod.hello)
+
+
+def test_load_mod_from_text():
+    txt = """
+def mult(value):
+    return value * X
+"""
+    mod = utils.loadmod(io.StringIO(txt))
+    pytest.raises(NameError, mod.mult, 12)
+
+    mod = utils.loadmod(io.StringIO(txt), {"X": 2})
+    assert 24 == mod.mult(12)
 
 
 def test_load_remote():
