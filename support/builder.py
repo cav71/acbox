@@ -26,7 +26,7 @@ import jinja2
 import tomllib
 
 import acbox
-from acbox.clickwrapper import MainFn, clickwrap, command
+from acbox.clickwrapper import MainFn, command
 from acbox.fileops import backups
 from acbox.runner import Runner
 from acbox.services.git import Git
@@ -62,6 +62,7 @@ def add_arguments(fn: MainFn) -> MainFn:
 
 
 def process_options(options: Namespace) -> None:
+    breakpoint()
     if options.release and options.beta:
         raise click.BadParameter("--release and --beta are mutually exclusive")
     elif not (options.release or options.beta):
@@ -126,8 +127,7 @@ def get_new_beta_number(name: str, version: str) -> int:
     return (max(values) + 1) if values else 0
 
 
-@command()
-@clickwrap("default", add_arguments, process_options)
+@command("fancy", add_arguments, process_options)
 def main(args: Namespace) -> None:
     runc = Runner(verbose=args.verbose)
     gitx = Git.new(Path.cwd(), verbose=args.verbose)

@@ -112,9 +112,12 @@ def command(
 ) -> Callable[[MainFn], Any]:
     def decorator(func: MainFn) -> Callable[[MainFn], None]:
         adeco = clickwrap(kind, add_arguments, process_options)(func)
-        bdeco = cloup.command(
-            formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()), context_settings={"show_default": True}
-        )(adeco)
+        if kind in {"fancy"}:
+            bdeco = cloup.command(
+                formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()), context_settings={"show_default": True}
+            )(adeco)
+        else:
+            bdeco = cloup.command()(adeco)
         return bdeco
 
     return decorator
