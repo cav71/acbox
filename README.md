@@ -18,32 +18,34 @@
 pip install acbox
 ```
 
-### Cli
+### Helpers
 
-```
+#### cli helper
+A cli wrapper modeled after click
+```python
+from argparse import Namespace
 from acbox import clickwrapper
 
-@clickwrapper.command()
-@clickwrapper.clickwrap("default")
+@clickwrapper.command("fancy")
 def main(args: Namespace) -> None:
     print(args)
 ```
 
+#### utilities
 
-### Development
+A cli runner with verbose output
+```python
+from acbox.runner import Runner
 
-```
-python3.13 -m venv .venv
-source .venv/bin/activate
-```
-
-```
-python -m pip install --upgrade pip
-python -m pip install --group dev
-pre-commit install
+runner = Runner(True, exe=["git"])
+print(runner.run(["status"], capture=True))
 ```
 
-Ready.
+A loadmod function to load modules from a file
+```python
+from acbox.utils import loadmod
+print(loadmod(Path("support/builder")))
+```
 
 
 Ref. {{gdata.branch}}@{{gdata.rev}} 
