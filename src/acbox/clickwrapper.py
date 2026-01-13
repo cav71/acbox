@@ -67,18 +67,19 @@ def clickwrapper(
         @functools.wraps(fn)
         def __clickwrapper(*args, **kwargs):
             options = Namespace(**kwargs)
+
+            def error(msg):
+                raise click.UsageError(msg)
+
+            if hasattr(options, "error"):
+                raise RuntimeError("you have an error option")
+            options.error = error
+
             if process_options:
                 processors = process_options if isinstance(process_options, Sequence) else [process_options]
                 for process in processors:
                     options = process(options) or options
 
-            if hasattr(options, "error"):
-                raise RuntimeError("you have an error option")
-
-            def error(msg):
-                raise click.UsageError(msg)
-
-            options.error = error
             if ret := fn(options):
                 raise click.exceptions.Exit(ret)
             return ret
