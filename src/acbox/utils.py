@@ -25,7 +25,7 @@ def loadmod(path: Path | str | StringIO, variables: dict[str, Any] | None = None
         txt = str(urlopen(str(path)).read(), encoding="utf-8")
         path = f"<string {path}>"
     elif parsed.scheme in {"file"}:
-        txt = Path(parsed.netloc).read_text()
+        txt = Path(parsed.path).read_text()
         path = parsed.netloc
     else:
         raise ValueError(f"unsupported path type: {path}")

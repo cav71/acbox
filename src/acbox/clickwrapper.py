@@ -1,10 +1,12 @@
 import functools
 import logging
+import sys
 from argparse import Namespace
 from typing import Any, Callable, Sequence
 
 import click
 import cloup
+from rich.console import Console
 from rich.logging import RichHandler
 
 MainFn = Callable[[Namespace], int | None]
@@ -35,8 +37,11 @@ def process_loglevel(options: Namespace) -> Namespace:
 
 def process_loglevel_fancy(options: Namespace, verbose_flag: bool = False) -> Namespace:
     level = _resolve_log_level(options)
+    stderr = Console(stderr=True)
     logging.basicConfig(
-        level=level, format="%(asctime)s %(message)s", handlers=[RichHandler(show_time=False, markup=True, rich_tracebacks=True)]
+        level=level,
+        format="%(asctime)s %(message)s",
+        handlers=[RichHandler(console=stderr, show_time=False, markup=True, rich_tracebacks=True)],
     )
     return options
 
@@ -71,9 +76,13 @@ def clickwrapper(
             def error(msg):
                 raise click.UsageError(msg)
 
-            if hasattr(options, "error"):
-                raise RuntimeError("you have an error option")
+            def exit(retcode: int = 0):
+                sys.exit(retcode)
+
+            if hasattr(options, "error") or hasattr(options, "exit"):
+                raise RuntimeError("you have an error|exit option")
             options.error = error
+            options.exit = sys.exit
 
             if process_options:
                 processors = process_options if isinstance(process_options, Sequence) else [process_options]

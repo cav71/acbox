@@ -76,6 +76,32 @@ class Runner:
         return runc(fullargs, stdout=stdout, stderr=stderr, overrides=overrides, cwd=cwd)
 
 
+@dc.dataclass
+class DryRunner(Runner):
+    def __call__(
+        self,
+        args: Paths,
+        capture: bool = False,
+        verbose: bool | None = None,
+        dryrun: bool | None = None,
+        cwd: Path | str | bool | None = None,
+        overrides: dict[str, str] | None = None,
+        log: logging.Logger | None = None,
+    ) -> str | bytes | None:
+        if capture:
+            raise RuntimeError("cannot dryrun and caputure")
+        cwd = cwd or self.cwd
+        overrides = overrides or self.overrides
+        log = log or self.log or logger
+
+        fullargs = mkpaths(args)
+        if self.exe:
+            fullargs = [*mkpaths(self.exe), *fullargs]
+
+        (log.info if self.verbose else log.debug)("%srun: %s", "(dry-run) " if dryrun else "", " ".join(fullargs))
+        return None
+
+
 if __name__ == "__main__":
     runner = Runner(True)
     y = runner(["ls", "-l"], capture=False, verbose=True)
