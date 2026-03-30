@@ -1,0 +1,8 @@
+Beta releases:
+  create a new beta/X.Y.Z branch
+  merge changes there and push
+
+Releases:
+  tag the main branch with:
+    echo git tag -m release v$(egrep -e '^version =' pyproject.toml  | awk '{print $3}' | tr -d '"') 
+  increate in the main branch the pyproject.toml version, commit and push
