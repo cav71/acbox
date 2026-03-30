@@ -2,6 +2,7 @@
 # dependencies = [
 # "rich",
 # "click",
+# "cloup",
 # "acbox",
 # ]
 # ///

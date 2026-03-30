@@ -133,7 +133,7 @@ def command(
     return decorator
 
 
-def group():
+def group(kind: str | None = "default", add_arguments: AddArgFn | None = None, process_options: ProcessOptionsFn | None = None):
     def _fn(fn):
         g = cloup.group(formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()), show_subcommand_aliases=True)
         group = g(fn)

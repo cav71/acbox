@@ -18,7 +18,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 import click
 
 import acbox.packer
-from acbox.clickwrapper import MainFn, clickwrap, command
+from acbox.clickwrapper import MainFn, command
 
 DEPS = {
     # uv tree --package rich
@@ -89,8 +89,7 @@ def process_options(args: Namespace) -> None:
         args.output = Path(args.output)
 
 
-@command()
-@clickwrap("default", add_arguments, process_options)
+@command("default", add_arguments, process_options)
 def main(args: Namespace) -> None:
     log.info("creating package out of '%s'", args.script)
     log.info("output %s", args.output)
