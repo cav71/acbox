@@ -8,7 +8,14 @@ import tempfile
 from pathlib import Path
 from typing import Generator
 
-from .run1 import EMode, OMode, Paths, mkpaths, runc
+from .run1 import (
+    EMode,
+    OMode,
+    Paths,
+    RunnerError,  # noqa: F401
+    mkpaths,
+    runc,
+)
 
 logger = logging.getLogger(__name__)
 
