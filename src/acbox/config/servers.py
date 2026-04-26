@@ -2,9 +2,8 @@ from pathlib import Path
 from sys import argv
 from typing import Any, Literal
 
-from ruamel.yaml import YAML
-
 from pydantic import BaseModel, ConfigDict
+from ruamel.yaml import YAML
 
 
 class ConfigError(Exception):
