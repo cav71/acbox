@@ -99,7 +99,9 @@ def clickwrapper(
 
 
 def clickwrap(
-    kind: str | None = "default", add_arguments: AddArgFn | None = None, process_options: ProcessOptionsFn | None = None
+    kind: str | None = "default",
+    add_arguments: AddArgFn | Sequence[AddArgFn] | None = None,
+    process_options: ProcessOptionsFn | Sequence[ProcessOptionsFn] | None = None,
 ) -> Callable[[MainFn], Any]:
     args0: list[AddArgFn] = []
     args1: list[ProcessOptionsFn] = []
@@ -111,9 +113,15 @@ def clickwrap(
         if arg1 := CLICKWRAPPERS[kind][1]:
             args1.append(arg1)
     if add_arguments:
-        args0.append(add_arguments)
+        if isinstance(add_arguments, Sequence):
+            args0.extend(add_arguments)
+        else:
+            args0.append(add_arguments)
     if process_options:
-        args1.append(process_options)
+        if isinstance(process_options, Sequence):
+            args1.extend(process_options)
+        else:
+            args1.append(process_options)
     return clickwrapper(args0, args1)
 
 

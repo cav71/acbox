@@ -30,7 +30,9 @@ dependencies = [
     "cloup",
     "filetype",
     "rich",
+    "pydantic",
     "pyyaml",
+    "ruamel-yaml",
 ]
 
 [dependency-groups]
@@ -58,7 +60,9 @@ dev = [
 
 
 [project.optional-dependencies]
-extra = []
+extra = [
+    "pydantic",
+]
 
 [project.urls]
 Source = "https://github.com/cav71/acbox"
