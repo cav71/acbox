@@ -1,4 +1,5 @@
 from pathlib import Path
+from sys import argv
 from typing import Any, Literal
 
 from ruamel.yaml import YAML
@@ -55,8 +56,6 @@ def load(path: Path | str, kind: str | None = None) -> Config:
 
 
 if __name__ == "__main__":
-    from sys import argv
-
     for name, server in load(Path(argv[1])).servers.items():
         print(f"{name=}, [{server.__class__.__name__}]")  # noqa: T201
         print(f"  {server.server_type=}")  # noqa: T201
