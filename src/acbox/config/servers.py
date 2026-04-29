@@ -2,8 +2,11 @@ from pathlib import Path
 from sys import argv
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict
 from ruamel.yaml import YAML
+
+from pydantic import BaseModel, ConfigDict, PrivateAttr
+
+from .types import InterfaceType
 
 
 class ConfigError(Exception):
@@ -26,14 +29,15 @@ class Sqlite(Server):
 
 
 class Imap(Server):
-    url: str | None = None
     username: str
     password: str
-    interface: str  # Interface #Annotated[str, AfterValidator(Interface)]
+    interface: InterfaceType
 
 
 class Config(BaseModel):
     servers: dict[str, Server]
+    _raw: Any = PrivateAttr(default=None)
+    _yaml: Any = PrivateAttr(default=None)
 
 
 def server_from_dict(data: dict[str, Any]) -> Imap | Sqlite:
@@ -51,7 +55,32 @@ def load(path: Path | str, kind: str | None = None) -> Config:
             raise ConfigError(f"duplicate server {name=}")
         seen.add(name)
         servers[name] = server_from_dict(sdata)
-    return Config(servers=servers)
+    config = Config(servers=servers)
+    config._raw = data
+    config._yaml = yaml
+    return config
+
+
+def save(config: Config, path: Path | str) -> None:
+    if config._raw is not None:
+        # Update the raw ruamel structure in-place to preserve comments
+        raw_by_name = {sdata["name"]: sdata for sdata in config._raw["servers"]}
+        for server in config.servers.values():
+            dumped = server.model_dump(by_alias=True)
+            if server.name in raw_by_name:
+                sdata = raw_by_name[server.name]
+                for key, value in dumped.items():
+                    sdata[key] = value
+            else:
+                config._raw["servers"].append(dumped)
+        # Remove entries that no longer exist
+        config._raw["servers"] = [sdata for sdata in config._raw["servers"] if sdata["name"] in config.servers]
+        yaml = config._yaml
+        yaml.dump(config._raw, Path(path))
+    else:
+        yaml = YAML(typ="rt")
+        servers = [server.model_dump(by_alias=True) for server in config.servers.values()]
+        yaml.dump({"servers": servers}, Path(path))
 
 
 if __name__ == "__main__":
