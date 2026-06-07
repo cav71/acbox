@@ -5,4 +5,4 @@ T = TypeVar("T")
 
 @runtime_checkable
 class BaseNode(Protocol[T]):
-    children: list["BaseNode[T]"]
+    children: list[T]
