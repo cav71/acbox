@@ -6,10 +6,10 @@ from .nodes import BaseNode
 U = TypeVar("U")
 
 
-def tree2dot(root: BaseNode[U], attribute: str | None = None) -> str:
+def tree2dot(root: BaseNode, attribute: str | None = None) -> str:
     from jinja2 import Template
 
-    node2ids: dict[str, tuple[int, BaseNode[U]]] = {}
+    node2ids: dict[str, tuple[int, BaseNode]] = {}
     q = collections.deque([root])
     while q:
         cur = q.popleft()
