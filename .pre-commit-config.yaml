@@ -32,3 +32,11 @@ repos:
         #require_serial: true
         #additional_dependencies: []
         #minimum_pre_commit_version: '2.9.2'
+
+      - id: quality
+        name: quality
+        description: "Run quality checks"
+        language: system
+        entry: support/quality.py
+        types_or: [python]
+        pass_filenames: true
