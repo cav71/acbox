@@ -40,3 +40,4 @@ repos:
         entry: support/quality.py
         types_or: [python]
         pass_filenames: true
+        args: ["-v"] 
