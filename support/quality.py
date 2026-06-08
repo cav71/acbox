@@ -1,4 +1,14 @@
 #!/usr/bin/env python
+"""Run quality check on code
+Layout:
+├── src
+│   └── acbox
+│       └─ cli
+│          └─ shared.py
+└── tests
+ └── test_cli_shared.py
+"""
+
 import argparse
 import dataclasses as dc
 import json
@@ -58,8 +68,11 @@ def parse_args():
     return args
 
 
-def candidates(path: Path, package: Path, dirs: list[Path]) -> list[Path]:
-    relpath = path.relative_to(package)
+def candidates(path: Path, package: Path, dirs: list[Path]) -> list[Path] | None:
+    try:
+        relpath = path.relative_to(package)
+    except ValueError:
+        return None
     candidates = []
     for tdir in dirs:
         if (test := tdir / relpath.parent / f"test_{path.name}").exists():
@@ -115,23 +128,27 @@ def main(args):
 
     tests = {}
     for source in args.sources:
-        key = source.relative_to(args.package_source)
-        paths = candidates(source, args.package_source, args.test_dirs)
         logger.info("processing %s", source)
+        if (paths := candidates(source, args.package_source, args.test_dirs)) is None:
+            logger.warning("skipping source not inside package dir, %s", source)
+            continue
         logger.info("test targets %s", paths)
+        key = source.relative_to(args.package_source)
         tests[key] = paths
-    junit, coverage = run(tests, args.coverage)
-    for test in process_xml(junit):
-        if test.failures:
-            print(test)
 
-    coverages = json.loads(coverage)
-    for source in args.sources:
-        path = source.relative_to(Path.cwd())
-        module_source = source.relative_to(args.package_source)
-        coverage = coverages["files"][str(path)]
-        total_pct = coverage["summary"]["percent_covered"]
-        print(f"{module_source} {total_pct}")
+    if tests:
+        junit, coverage = run(tests, args.coverage)
+        for test in process_xml(junit):
+            if test.failures:
+                print(test)
+
+        coverages = json.loads(coverage)
+        for source in args.sources:
+            path = source.relative_to(Path.cwd())
+            module_source = source.relative_to(args.package_source)
+            coverage = coverages["files"][str(path)]
+            total_pct = coverage["summary"]["percent_covered"]
+            print(f"{module_source} {total_pct}")
 
 
 if __name__ == "__main__":
