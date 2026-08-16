@@ -80,6 +80,8 @@ namespaces = false
 target-version = "py39"
 line-length = 140
 src = ["src/acbox"]
+exclude = ["src/acbox/config/servers.py"]
+
 
 [tool.ruff.format]
 quote-style = "double"
