@@ -89,7 +89,7 @@ ignore = []
 select = ["F", "E", "W", "Q", "I"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["acbox"]
+known-first-party = ["src"]
 
 
 [tool.mypy]
