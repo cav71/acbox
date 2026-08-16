@@ -4,9 +4,8 @@ from typing import Any, Literal
 
 from ruamel.yaml import YAML
 
+from acbox.config.types import InterfaceType  # noqa: I001
 from pydantic import BaseModel, ConfigDict, PrivateAttr
-
-from .types import InterfaceType  # noqa: I001
 
 
 class ConfigError(Exception):
