@@ -86,7 +86,7 @@ quote-style = "double"
 
 [tool.ruff.lint]
 ignore = []
-select = ["F", "E", "W", "Q", "I001"]
+select = ["F", "E", "W", "Q", "I"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["acbox"]
