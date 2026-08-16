@@ -2,10 +2,11 @@ from pathlib import Path
 from sys import argv
 from typing import Any, Literal
 
-from ruamel.yaml import YAML  # noqa: I001
+from ruamel.yaml import YAML
 
-from acbox.config.types import InterfaceType  # noqa: I001
-from pydantic import BaseModel, ConfigDict, PrivateAttr  # noqa: I001
+from pydantic import BaseModel, ConfigDict, PrivateAttr
+
+from .types import InterfaceType
 
 
 class ConfigError(Exception):

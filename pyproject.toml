@@ -89,10 +89,8 @@ ignore = []
 select = ["F", "E", "W", "Q", "I"]
 
 [tool.ruff.lint.isort]
-known-first-party = [
-    "acbox",
-    "acbox.config",
-]
+known-first-party = [ "acbox" ]
+known-local-folder = ["src"]
 
 
 [tool.mypy]
