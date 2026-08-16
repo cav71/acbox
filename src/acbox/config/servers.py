@@ -6,7 +6,7 @@ from ruamel.yaml import YAML
 
 from pydantic import BaseModel, ConfigDict, PrivateAttr
 
-from .types import InterfaceType
+from .types import InterfaceType  # noqa: I101
 
 
 class ConfigError(Exception):

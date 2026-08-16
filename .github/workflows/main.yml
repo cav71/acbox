@@ -67,8 +67,6 @@ jobs:
         shell: bash
         run: |
           uv sync --no-managed-python
-          uv run ruff --version
-          exit 1
 
       - name: Checks & Balances
         shell: bash
