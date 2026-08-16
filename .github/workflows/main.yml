@@ -74,10 +74,10 @@ jobs:
           uv run python support/checks-and-balances.py
 
       - name: Run Python checks (ruff+format)
-        run: uv run ruff --verbose format --exit-non-zero-on-format src tests
+        run: uv run ruff format --exit-non-zero-on-format src tests
 
       - name: Run Python checks (ruff+check)
-        run: uv run ruff --verbose check --fix --exit-non-zero-on-fix src tests
+        run: uv run ruff check --fix --exit-non-zero-on-fix src tests
 
       - name: Run Python checks (mypy)
         shell: bash
