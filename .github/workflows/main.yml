@@ -77,7 +77,9 @@ jobs:
         run: uv run ruff format --exit-non-zero-on-format src tests
 
       - name: Run Python checks (ruff+check)
-        run: uv run ruff check --fix --exit-non-zero-on-fix --show-fixes --verbose src tests
+        run: |
+          uv run ruff check --fix --exit-non-zero-on-fix --show-fixes --show-settings src tests
+          exit 1
 
       - name: Run Python checks (mypy)
         shell: bash
