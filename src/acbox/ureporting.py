@@ -21,6 +21,7 @@ class Record:
     group: str  # group all records with the same group in output
     key: str  # unique key inside a group
     report: str | list[str] = ""
+    index: int = 0
 
 
 @dc.dataclass
@@ -78,13 +79,14 @@ def dumps(report: list[Record], sorted_groups: bool = True) -> str:
         status = resolve(set(record.status for record in records))
         result.append(f"{color(status)} {group}")
         start = " " * 4 + " " * width
-        for record in records:
+        for record in sorted(records, key=lambda r: r.index):
             if record.group != group:
                 continue
             if isinstance(record.report, str):
                 message = record.report
             elif isinstance(record.report, list):
-                message = indent("\n".join(record.report), pre=start).lstrip()
+                items = record.report
+                message = indent("\n".join(items), pre=start).lstrip()
             else:
                 raise RuntimeError("unable to handle type", type(record.report))
             result.append(f"{pre}{colorize(record.key, record.status):{width}} {message}")

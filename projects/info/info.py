@@ -16,24 +16,6 @@ from pathlib import Path
 from acbox.toolbox import info as acbox_info
 from acbox.ureporting import Record, S, check, load_external_checks, print_report
 
-
-@check
-def check_envfile(group: str) -> list[Record]:
-    path = Path("/etc/env.sh")
-    result = []
-    if path.exists():
-        lines = [
-            [l1.strip() for l1 in line.split("=")]
-            for line in path.read_text().split("\n")
-            if line.strip() and "=" in line and len(line.split("=")) == 2
-        ]
-        for key, value in lines:
-            result.append(Record(S.NOSTATUS, group, key, value))
-    else:
-        result.append(Record(S.NOSTATUS, group, "not-found"))
-    return result
-
-
 # def get_installed_using_pip(workdir: Path) -> dict[str, str]:
 #     output = runc(["pipenv", "run", "pip", "list", "--format", "json"], overrides={
 #         "PIP_NO_CACHE_DIR": "yes",
@@ -142,7 +124,7 @@ def main() -> int:
     report.extend(acbox_info.check_plaform("platform"))
     report.extend(acbox_info.check_environ("environ.env"))
     report.extend(acbox_info.check_executables("environ.exe"))
-    report.extend(check_envfile("envfile"))
+    report.extend(acbox_info.check_envfile("envfile"))
     report.extend(check_missing_so_files(Path.cwd()))
     report.extend(load_external_checks(sys.argv[1:]))
     return print_report(report)

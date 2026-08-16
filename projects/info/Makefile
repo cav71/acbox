@@ -8,3 +8,7 @@ export PYTHONPATH = ../../src
 pack:  ## create self standing package
 	../../support/packer.py -v -x info.py
 	chmod a+rx dist/info.pyz
+
+.PHONY: clean
+clean:  ## cleanup build
+	rm -rf dist

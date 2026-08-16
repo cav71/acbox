@@ -1,25 +1,22 @@
+fail_fast: true
+
+
 repos:
   - repo: local
     hooks:
-      - id: ruff
-        name: ruff-check
-        description: "Run 'ruff' for extremely fast Python linting"
-        language: system
-        entry: ruff check --force-exclude
-        types_or: [python, pyi]
-        #args: []
-        #require_serial: true
-        #additional_dependencies: []
-      
       - id: ruff-format
         name: ruff-format
         description: "Run 'ruff format' for extremely fast Python formatting"
         language: system
-        entry: ruff format --force-exclude
+        entry: ruff format --force-exclude --exit-non-zero-on-format
         types_or: [python, pyi]
-        #args: []
-        #require_serial: true
-        #additional_dependencies: []
+
+      - id: ruff
+        name: ruff-check
+        description: "Run 'ruff' for extremely fast Python linting"
+        language: system
+        entry: ruff check --force-exclude --fix --exit-non-zero-on-fix
+        types_or: [python, pyi]
       
       - id: mypy
         name: mypy
@@ -27,17 +24,12 @@ repos:
         language: system
         entry: mypy
         types_or: [python, pyi]
-        #args: []
-        #pass_filenames: true
-        #require_serial: true
-        #additional_dependencies: []
-        #minimum_pre_commit_version: '2.9.2'
 
-      - id: quality
-        name: quality
-        description: "Run quality checks"
-        language: system
-        entry: support/quality.py
-        types_or: [python]
-        pass_filenames: true
-        args: ["-v"] 
+#      - id: quality
+#        name: quality
+#        description: "Run quality checks"
+#        language: system
+#        entry: support/quality.py
+#        types_or: [python]
+#        pass_filenames: true
+#        args: ["-v"] 

@@ -16,6 +16,7 @@ from typing import IO, Generator
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import click
+import tomllib
 
 import acbox.packer
 from acbox.clickwrapper import MainFn, command
@@ -77,6 +78,7 @@ def add_dir(zfp: ZipFile, path: Path) -> None:
 def add_arguments(fn: MainFn) -> MainFn:
     fn = click.argument("dependencies", nargs=-1)(fn)
     fn = click.argument("script", type=click.Path(exists=True, path_type=Path))(fn)
+    fn = click.option("--versioned", is_flag=True)(fn)
     fn = click.option("-x", "--executable", is_flag=True)(fn)
     fn = click.option("-o", "--output", default="dist/")(fn)
     return fn
@@ -87,6 +89,12 @@ def process_options(args: Namespace) -> None:
         args.output = Path(args.output) / args.script.with_suffix(".pyz").name
     else:
         args.output = Path(args.output)
+
+    if args.versioned:
+        pyproject = tomllib.loads((Path(__file__).parent.parent / "pyproject.toml").read_text())
+        version = pyproject["project"]["version"]
+        name = args.output.with_suffix("")
+        args.output = name.parent / f"{name.name}-{version}.pyz"
 
 
 @command("default", add_arguments, process_options)

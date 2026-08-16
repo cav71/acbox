@@ -48,4 +48,4 @@ print(loadmod(Path("support/builder")))
 ```
 
 
-Ref. {{gdata.branch}}@{{gdata.rev}} 
+Ref. {{gdata.branch}}@{{gdata.sha7}} 
