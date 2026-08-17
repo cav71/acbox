@@ -8,9 +8,7 @@ on:
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 env:
-  PACKAGE: ${{ github.event.repository.name }}
   PYTHONPATH: src
-  # GITHUB_DUMP: ${{ toJson(github) }}
   GITHUB_DUMP: |
     {
       "event": {
@@ -23,29 +21,23 @@ env:
       "ref": "${{ github.ref }}",
       "sha": "${{ github.sha }}",
       "run_number": "${{ github.run_number }}",
-      "ref_name": "${{ github.ref_name }}"
+      "ref_name": "${{ github.ref_name }}",
+      "repository": "${{ github.repository }}",
+      "workflow_ref": "${{ github.workflow_ref }}"
     }
-  TARGETPY: "3.13"
+  TARGETPY: "3.14"
   TARGETOS: "ubuntu-latest"
 
 
 jobs:
-  tags:
+  build:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.13"]
+        python-version: ["3.14"]
     runs-on: ${{ matrix.os }}
 
     steps:
-      # https://github.com/actions/checkout
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          # WARNING!! this is important
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
-
       - name: Dump ENV
         shell: bash
         run: |
@@ -53,17 +45,25 @@ jobs:
           echo "$GITHUB_DUMP" | python -m json.tool 
           echo "=== END GITHUB_DUMP ==="
 
+      # https://github.com/actions/checkout
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # WARNING!! this is important
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
       # https://github.com/actions/setup-python
-      - name: Setup Python toolchain for ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+      - name: Install Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
 
       # https://github.com/astral-sh/setup-uv
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v10.0.1
 
-      - name: Python dependencies
+      - name: Create venv
         shell: bash
         run: |
           uv sync --no-managed-python
@@ -73,11 +73,11 @@ jobs:
         run: |
           uv run python support/checks-and-balances.py
 
-      - name: Run Python checks (ruff)
-        shell: bash
-        run: |
-          uv run ruff check src tests
-          uv run ruff format --check src tests
+      - name: Run Python checks (ruff+format)
+        run: uv run ruff format --exit-non-zero-on-format src tests
+
+      - name: Run Python checks (ruff+check)
+        run: uv run ruff check --fix --exit-non-zero-on-fix --show-fixes src tests
 
       - name: Run Python checks (mypy)
         shell: bash
@@ -87,50 +87,64 @@ jobs:
           uv run mypy src tests \
             --no-incremental --xslt-html-report $OUTDIR/mypy
 
-      - name: Run Python checks (tests)
-        shell: bash
+      - name: Run Python checks (tests+coverage)
         env:
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
+        shell: bash
         run: |
+          mkdir -p ${OUTDIR}
+          echo "$GITHUB_DUMP" > ${OUTDIR}/github.json
           uv run pytest -vvs -l \
-              --cov=${{ env.PACKAGE }} \
+              --cov=$(basename src/*) \
               --cov-report=html:$OUTDIR/coverage --cov-report=xml:$OUTDIR/coverage.xml \
               --junitxml=$OUTDIR/junit/junit.xml --html=$OUTDIR/junit/junit.html --self-contained-html \
             tests
 
+      - name: Create wheel (only on ${{ env.TARGETPY }}, ${{ env.TARGETOS }})
+        if: ${{ (matrix.python-version == env.TARGETPY) && (matrix.os == env.TARGETOS) }}
+        env:
+          OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
+        run: |
+          uv tool run --from git+https://github.com/cav71/action-python-project builder \
+            -J release README.md src/acbox/__init__.py
+          mv dist $OUTDIR
+
       # https://github.com/codecov/codecov-action
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         if: ${{ (matrix.python-version == env.TARGETPY) && (matrix.os == env.TARGETOS) }}
         with:
-          files: $OUTDIR/coverage.xml
+          files: build/qa-${{ matrix.python-version }}-${{ matrix.os}}/coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true # optional (default = false)
 
-      - name: Build wheel packages
-        if: ${{ (matrix.python-version == env.TARGETPY) && (matrix.os == env.TARGETOS) }}
-        env:
-          GITHUB_DUMP: ${{ toJson(github) }}
-        run: |
-            uv run support/builder.py --release \
-              src/acbox/__init__.py \
-              README.md
-
       - name: Archive artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: qa-results-${{ matrix.python-version }}-${{ matrix.os }}
           path: |
             build/qa-${{ matrix.python-version }}-${{ matrix.os}}
-            dist
-            .keepme
         # Use always() to always run this step to publish test results when there are test failures
         if: always()
 
-      # https://github.com/pypa/gh-action-pypi-publish
-      - name: "Publish beta package to pypi"
-        uses: pypa/gh-action-pypi-publish@release/v1
-        if: ${{ (matrix.python-version == env.TARGETPY) && (matrix.os == env.TARGETOS) }}
+  pypi-publish:
+    name: upload beta to PyPI
+    runs-on: ubuntu-latest
+    needs: build
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v8
         with:
-          attestations: false
-          password: ${{ secrets.PYPI_API_TOKEN }}
+          name: qa-results-${{ env.TARGETPY }}-${{ env.TARGETOS }}
+          path: |
+            build/qa-${{ env.TARGETPY }}-${{ env.TARGETOS }}
+
+      - name: Extract packages
+        run: |
+          mv build/qa-${{ env.TARGETPY }}-${{ env.TARGETOS }}/dist .
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
