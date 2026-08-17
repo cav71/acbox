@@ -15,7 +15,10 @@ def read_header(path: Path | str) -> dict | None:
     if len(matches) > 1:
         raise ValueError(f"Multiple {name} blocks found")
     elif len(matches) == 1:
-        content = "".join(line[2:] if line.startswith("# ") else line[1:] for line in matches[0].group("content").splitlines(keepends=True))
+        content = "".join(
+            line[2:] if line.startswith("# ") else line[1:]
+            for line in matches[0].group("content").splitlines(keepends=True)
+        )
         return tomllib.loads(content)
     else:
         return None

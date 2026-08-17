@@ -14,7 +14,10 @@ def runner(resolver):
     def run(example, args=None):
         script = resolver.lookup(resolver.root.parent.parent / example)
         p = subprocess.Popen(
-            [sys.executable, str(script), *[str(c) for c in (args or [])]], encoding="utf-8", stderr=subprocess.PIPE, stdout=subprocess.PIPE
+            [sys.executable, str(script), *[str(c) for c in (args or [])]],
+            encoding="utf-8",
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
         )
         out, err = p.communicate()
         return p.returncode, out, err

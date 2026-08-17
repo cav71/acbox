@@ -7,8 +7,12 @@ from ..parsers.base import ArgumentParserBase
 
 def add_arguments_logging(parser: ArgumentParserBase, baselevel: int = logging.INFO) -> None:
     group = parser.add_argument_group("Logging", "Logging related options")
-    group.add_argument("-v", "--verbose", dest="managed-loglevel", action="append_const", const=1, help="report verbose logging")
-    group.add_argument("-q", "--quiet", dest="managed-loglevel", action="append_const", const=-1, help="report quiet logging")
+    group.add_argument(
+        "-v", "--verbose", dest="managed-loglevel", action="append_const", const=1, help="report verbose logging"
+    )
+    group.add_argument(
+        "-q", "--quiet", dest="managed-loglevel", action="append_const", const=-1, help="report quiet logging"
+    )
 
     levelmap = [
         logging.DEBUG,

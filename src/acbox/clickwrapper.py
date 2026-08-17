@@ -15,7 +15,9 @@ ProcessOptionsFn = Callable[[Namespace], None | Namespace]
 
 
 def add_loglevel(fn: MainFn) -> MainFn:
-    fn = cloup.option_group("loglevel", click.option("-q", "--quiet", count=True), click.option("-v", "--verbose", count=True))(fn)
+    fn = cloup.option_group(
+        "loglevel", click.option("-q", "--quiet", count=True), click.option("-v", "--verbose", count=True)
+    )(fn)
     return fn
 
 
@@ -132,7 +134,8 @@ def command(
         adeco = clickwrap(kind, add_arguments, process_options)(func)
         if kind in {"fancy"}:
             bdeco = cloup.command(
-                formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()), context_settings={"show_default": True}
+                formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()),
+                context_settings={"show_default": True},
             )(adeco)
         else:
             bdeco = cloup.command()(adeco)
@@ -141,9 +144,13 @@ def command(
     return decorator
 
 
-def group(kind: str | None = "default", add_arguments: AddArgFn | None = None, process_options: ProcessOptionsFn | None = None):
+def group(
+    kind: str | None = "default", add_arguments: AddArgFn | None = None, process_options: ProcessOptionsFn | None = None
+):
     def _fn(fn):
-        g = cloup.group(formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()), show_subcommand_aliases=True)
+        g = cloup.group(
+            formatter_settings=cloup.HelpFormatter.settings(theme=cloup.HelpTheme.dark()), show_subcommand_aliases=True
+        )
         group = g(fn)
         group._command = group.command
         group.command = functools.partial(
