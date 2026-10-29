@@ -15,6 +15,7 @@ COLORS = {
     "blue": "\033[94m",
     "green": "\033[92m",
     "red": "\033[91m",
+    "yellow": "\033[93m",
     "clear": "\033[0m",
 }
 
@@ -44,8 +45,8 @@ class BaseFilter:
             pass
 
 
-OMode = Literal["capture", "null", "display", "capture+display"] | BaseFilter
-EMode = Literal["null", "display"] | BaseFilter
+OMode = Literal["null", "capture", "display", "capture+display", "display+capture"] | BaseFilter
+EMode = Literal["null", "capture", "display", "capture+display", "display+capture"] | BaseFilter
 Paths = str | Path | Sequence[str | Path]
 
 
@@ -103,39 +104,34 @@ def runc(
     overrides: dict[str, str] | None = None,
     timeout: datetime.datetime | datetime.timedelta | int | float | None = None,
     **kwargs,
-) -> str | bytes | None:
+) -> tuple[str | bytes | None, str | bytes | None]:
     kwargs["env"] = kwargs.pop("env") if "env" in kwargs else os.environ.copy()
     kwargs["env"].update(overrides or {})
     kwargs["cwd"] = (str(v) if (v := kwargs.pop("cwd")) else None) if "cwd" in kwargs else None
 
-    with subprocess.Popen(mkpaths(args), stderr=subprocess.PIPE, stdout=subprocess.PIPE, **kwargs) as process:
-        if stdout == "capture":
-            ofiltermap: BaseFilter = CaptureFilter()
-        elif stdout == "null":
-            ofiltermap = BaseFilter()
-        elif stdout == "display":
-            ofiltermap = DisplayFilter(COLORS["blue"], "   | ")
-        elif stdout == "capture+display":
-            ofiltermap = DisplayFilter(COLORS["blue"], "   | ", capture=True)
-        elif isinstance(stdout, BaseFilter):
-            ofiltermap = stdout
+    filtermaps: dict[str, BaseFilter] = {}
+    for key, color in [("stdout", COLORS["blue"]), ("stderr", COLORS["yellow"])]:
+        if isinstance(locals()[key], BaseFilter):
+            filtermaps[key] = locals()[key]
+        elif isinstance(locals()[key], str):
+            flags = set(locals()[key].split("+"))
+            if extra := (flags - {"capture", "display", "null"}):
+                raise RuntimeError(f"cannot handle {stdout=}")
+            if flags == {"capture"}:
+                filtermaps[key] = CaptureFilter()
+            elif flags == {"null"}:
+                filtermaps[key] = BaseFilter()
+            elif flags == {"display"}:
+                filtermaps[key] = DisplayFilter(color, "   | ", capture=False)
+            elif flags == {"capture", "display"}:
+                filtermaps[key] = DisplayFilter(color, "   | ", capture=True)
         else:
-            raise RuntimeError(f"unsupported type in {stdout=}")
-        othread = threading.Thread(target=ofiltermap, args=(process.stdout,), daemon=True)
+            raise RuntimeError(f"cannot handle {key} with {locals()[key]}")
 
-        if stderr == "null":
-            efiltermap: BaseFilter = BaseFilter()
-        elif stderr == "display":
-            efiltermap = DisplayFilter(COLORS["green"], "   | ")
-        elif isinstance(stderr, BaseFilter):
-            efiltermap = stderr
-        else:
-            raise RuntimeError(f"unsupported type in {stderr=}")
-        ethread = threading.Thread(
-            target=efiltermap,
-            args=(process.stderr,),
-            daemon=True,
-        )
+    with subprocess.Popen(mkpaths(args), stderr=subprocess.PIPE, stdout=subprocess.PIPE, **kwargs) as process:
+        othread = threading.Thread(target=filtermaps["stdout"], args=(process.stdout,), daemon=True)
+        ethread = threading.Thread(target=filtermaps["stderr"], args=(process.stderr,), daemon=True)
+
         expiry = None
         if timeout:
             if isinstance(timeout, datetime.datetime):
@@ -170,9 +166,35 @@ def runc(
         # envs = " ".join(f'{k}="{v}"' for k, v in (overrides or {}).items())
         cmdline = subprocess.list2cmdline(mkpaths(args))
         raise kind(f"failed to execute {cmdline}", kwargs["cwd"], overrides, cmdline, process.returncode)
-    return ofiltermap.result if hasattr(ofiltermap, "result") else None
+
+    return (
+        getattr(filtermaps["stdout"], "result", None),
+        getattr(filtermaps["stderr"], "result", None),
+    )
+
+
+def testing():
+    from random import randint
+
+    counter = None if len(sys.argv) < 3 else int(sys.argv[2])
+    index = 0
+    while (counter is None) or counter >= 0:
+        code = randint(1, 2)
+        out = sys.stderr if (code == 1) else sys.stdout
+        print(f"{index=:04} - a message from {out} {code}", file=out)
+        time.sleep(0.03)
+        index += 1
+        counter -= 1
 
 
 if __name__ == "__main__":
-    x = runc(["ls", "-l"], "capture", "display")
-    print(x)
+    if len(sys.argv) == 1 or (mode := sys.argv[1]) not in {"run", "test"}:
+        print(f"{Path(sys.argv[0]).name} run")
+        sys.exit()
+    if mode == "run":
+        ret = runc(
+            [sys.executable, __file__, "test", *sys.argv[2:]], stdout="display+capture", stderr="display+capture"
+        )[1]
+        print(f"{ret=}")
+    elif mode == "test":
+        testing()
