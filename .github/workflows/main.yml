@@ -77,9 +77,12 @@ jobs:
         env:
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
         run: |
-          echo "SAVING -> $OUTDIR"
+          mkdir -p $OUTDIR
           uv run mypy src tests \
             --no-incremental --xslt-html-report $OUTDIR/mypy
+
+          echo "= A $(pwd)/$OUTDIR"
+          find $OUTDIR
 
       - name: Run Python checks (tests+coverage)
         env:
