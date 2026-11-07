@@ -38,13 +38,6 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Dump ENV
-        shell: bash
-        run: |
-          echo "=== GITHUB_DUMP ==="
-          echo "$GITHUB_DUMP" | python -m json.tool 
-          echo "=== END GITHUB_DUMP ==="
-
       # https://github.com/actions/checkout
       - name: Checkout
         uses: actions/checkout@v7
@@ -54,7 +47,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       # https://github.com/actions/setup-python
-      - name: Install Python ${{ matrix.python-version }}
+      - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
@@ -63,7 +56,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.0.1
 
-      - name: Create venv
+      - name: Install dependencies
         shell: bash
         run: |
           uv sync --no-managed-python
@@ -109,6 +102,14 @@ jobs:
             -J beta README.md src/acbox/__init__.py
           mv dist $OUTDIR
 
+      - name: Create wheel (only on ${{ env.TARGETPY }}, ${{ env.TARGETOS }})
+        uses: cav71/action-build-wheel@v1
+        with:
+          mode: beta
+          files: |
+            README.md
+            src/acbox/__init__.py
+
       # https://github.com/codecov/codecov-action
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v7
@@ -127,24 +128,24 @@ jobs:
         # Use always() to always run this step to publish test results when there are test failures
         if: always()
 
-  pypi-publish:
-    name: upload beta to PyPI
-    runs-on: ubuntu-latest
-    needs: build
-    environment: pypi
-    permissions:
-      id-token: write
-    steps:
-      - name: Download Build Artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: qa-results-${{ env.TARGETPY }}-${{ env.TARGETOS }}
-          path: |
-            build/qa-${{ env.TARGETPY }}-${{ env.TARGETOS }}
-
-      - name: Extract packages
-        run: |
-          mv build/qa-${{ env.TARGETPY }}-${{ env.TARGETOS }}/dist .
-
-      - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+#   pypi-publish:
+#     name: upload beta to PyPI
+#     runs-on: ubuntu-latest
+#     needs: build
+#     environment: pypi
+#     permissions:
+#       id-token: write
+#     steps:
+#       - name: Download Build Artifact
+#         uses: actions/download-artifact@v8
+#         with:
+#           name: qa-results-${{ env.TARGETPY }}-${{ env.TARGETOS }}
+#           path: |
+#             build/qa-${{ env.TARGETPY }}-${{ env.TARGETOS }}
+# 
+#       - name: Extract packages
+#         run: |
+#           mv build/qa-${{ env.TARGETPY }}-${{ env.TARGETOS }}/dist .
+# 
+#       - name: Publish package distributions to PyPI
+#         uses: pypa/gh-action-pypi-publish@release/v1

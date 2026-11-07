@@ -28,18 +28,19 @@ classifiers = [
 dependencies = [
     "click",
     "cloup",
-    "filetype",
+#    "filetype",
     "rich",
-    "pydantic",
-    "pyyaml",
-    "ruamel-yaml",
+#    "pydantic",
+#    "pyyaml",
+#    "ruamel-yaml",
+    "tomli >= 2.0.0; python_version < '3.11'",
 ]
 
 [dependency-groups]
 dev = [
     "build",
-    "httpx",
-    "lxml",
+#    "httpx",
+#    "lxml",
     "mypy",
     "pre-commit",
     "pytest",
@@ -50,12 +51,12 @@ dev = [
     "types-python-dateutil",
     "types-pyyaml",
     # docs
-    'mkdocs',
-    'mkdocs-exclude',
-    'mkdocs-llmstxt',
-    'mkdocs-material[imaging]',
-    'mkdocs-redirects',
-    'mkdocstrings-python',
+#    'mkdocs',
+#    'mkdocs-exclude',
+#    'mkdocs-llmstxt',
+#    'mkdocs-material[imaging]',
+#    'mkdocs-redirects',
+#    'mkdocstrings-python',
 ]
 
 
@@ -71,6 +72,7 @@ Documentation = "https://github.com/cav71/acbox"
 
 [project.scripts]
 acbox-toolbox = "acbox.toolbox.main:main"
+acbox-tomlcat = "acbox.toolbox.tomlcat:main"
 
 [tool.ruff]
 target-version = "py310"
