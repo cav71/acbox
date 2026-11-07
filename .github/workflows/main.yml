@@ -93,22 +93,21 @@ jobs:
               --junitxml=$OUTDIR/junit/junit.xml --html=$OUTDIR/junit/junit.html --self-contained-html \
             tests
 
-      - name: Create wheel (only on ${{ env.TARGETPY }}, ${{ env.TARGETOS }})
-        if: ${{ (matrix.python-version == env.TARGETPY) && (matrix.os == env.TARGETOS) }}
-        env:
-          OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
-        run: |
-          uv tool run --from git+https://github.com/cav71/action-python-project builder \
-            -J beta README.md src/acbox/__init__.py
-          mv dist $OUTDIR
+        #env:
+        #  OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
+        #run: |
+        #  uv tool run --from git+https://github.com/cav71/action-python-project builder \
+        #    -J beta README.md src/acbox/__init__.py
+        #  mv dist $OUTDIR
 
       - name: Create wheel (only on ${{ env.TARGETPY }}, ${{ env.TARGETOS }})
-        uses: cav71/action-build-wheel@v1
+        uses: cav71/action-build-wheel
         with:
           mode: beta
           files: |
             README.md
             src/acbox/__init__.py
+          move: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
 
       # https://github.com/codecov/codecov-action
       - name: Upload coverage reports to Codecov
