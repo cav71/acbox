@@ -82,7 +82,7 @@ jobs:
             --no-incremental --xslt-html-report $OUTDIR/mypy
 
           echo "= A $(pwd)/$OUTDIR"
-          find $OUTDIR
+          find $(pwd)/$OUTDIR
 
       - name: Run Python checks (tests+coverage)
         env:
@@ -97,6 +97,9 @@ jobs:
               --cov-report=html:$OUTDIR/coverage --cov-report=xml:$OUTDIR/coverage.xml \
               --junitxml=$OUTDIR/junit/junit.xml --html=$OUTDIR/junit/junit.html --self-contained-html \
             tests
+
+          echo "= B $(pwd)/$OUTDIR"
+          find $(pwd)/$OUTDIR
 
         #env:
         #  OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
@@ -131,8 +134,9 @@ jobs:
           echo "= Cur dir: $(pwd)"
           echo "= X $OUTDIR"
           find $OUTDIR
-          echo "= Y build/qa-${{ matrix.python-version }}-${{ matrix.os}}"
-          find build/qa-${{ matrix.python-version }}-${{ matrix.os}}
+
+          echo "= C $(pwd)/$OUTDIR"
+          find $(pwd)/$OUTDIR
 
       - name: Archive artifacts
         uses: actions/upload-artifact@v7
