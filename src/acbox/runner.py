@@ -80,7 +80,7 @@ class Runner:
         log.debug("%srun: %s", "(dry-run) " if dryrun else "", " ".join(fullargs))
         if dryrun:
             return None
-        return runc(fullargs, stdout=stdout, stderr=stderr, overrides=overrides, cwd=cwd)
+        return runc(fullargs, stdout=stdout, stderr=stderr, overrides=overrides, cwd=cwd)[0]
 
 
 @dc.dataclass

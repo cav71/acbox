@@ -21,6 +21,8 @@ COLORS = {
 
 POLL_S = 0.03
 
+RuncReturnType = tuple[str | bytes | None, str | bytes | None]  # stdout, stderr
+
 logger = logging.getLogger(__name__)
 
 
@@ -104,7 +106,7 @@ def runc(
     overrides: dict[str, str] | None = None,
     timeout: datetime.datetime | datetime.timedelta | int | float | None = None,
     **kwargs,
-) -> tuple[str | bytes | None, str | bytes | None]:
+) -> RuncReturnType:
     kwargs["env"] = kwargs.pop("env") if "env" in kwargs else os.environ.copy()
     kwargs["env"].update(overrides or {})
     kwargs["cwd"] = (str(v) if (v := kwargs.pop("cwd")) else None) if "cwd" in kwargs else None
