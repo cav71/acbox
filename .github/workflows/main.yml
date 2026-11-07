@@ -101,7 +101,7 @@ jobs:
         #  mv dist $OUTDIR
 
       - name: Create wheel (only on ${{ env.TARGETPY }}, ${{ env.TARGETOS }})
-        uses: cav71/action-build-wheel
+        uses: cav71/action-build-wheel@main
         with:
           mode: beta
           files: |
