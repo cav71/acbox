@@ -9,6 +9,7 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 env:
   PYTHONPATH: src
+  # this will push the codecoverage from
   TARGETPY: "3.14"
   TARGETOS: "ubuntu-latest"
 
@@ -99,7 +100,7 @@ jobs:
         with:
           name: qa-results-${{ matrix.python-version }}-${{ matrix.os }}
           path: |
-            build/qa-${{ matrix.python-version }}-${{ matrix.os}}/
+            build/qa-${{ matrix.python-version }}-${{ matrix.os}}/dist
         # Use always() to always run this step to publish test results when there are test failures
         if: always()
 
@@ -120,7 +121,7 @@ jobs:
   
       - name: Extract packages
         run: |
-          mv build/qa-3.10-macos-latest/dist .
+          mv build/qa-3.14-ubuntu-latest/dist .
   
-      - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+#       - name: Publish package distributions to PyPI
+#         uses: pypa/gh-action-pypi-publish@release/v1
