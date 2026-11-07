@@ -77,6 +77,7 @@ jobs:
         env:
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
         run: |
+          echo "SAVING -> $OUTDIR"
           uv run mypy src tests \
             --no-incremental --xslt-html-report $OUTDIR/mypy
 
@@ -85,6 +86,7 @@ jobs:
           OUTDIR: build/qa-${{ matrix.python-version }}-${{ matrix.os}}
         shell: bash
         run: |
+          echo "SAVING -> $OUTDIR"
           mkdir -p ${OUTDIR}
           echo "$GITHUB_DUMP" > ${OUTDIR}/github.json
           uv run pytest -vvs -l \
