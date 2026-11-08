@@ -1,0 +1,10 @@
+[system]
+SECRET_KEY="a secret key"
+
+[database]
+pghost = "127.0.0.1"
+pgport = 5432
+pguser = "postgres-user"
+pgpassword = "postgres-pass"
+pgdatabase = "postgres-db"
+

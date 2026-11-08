@@ -7,6 +7,11 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib  # type: ignore[no-redef]
+
 import pytest
 
 DATADIR = Path(__file__).parent.parent / "data"
@@ -52,6 +57,8 @@ def resolver(request):
                 return source.read_text()
             elif mode == "mod":
                 return loadmod(source)
+            elif mode == "toml":
+                return tomllib.loads(source.read_text())
             raise RuntimeError(f"mode '{mode}' not supported")
 
     yield Resolver(DATADIR, request.module.__name__)
