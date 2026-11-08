@@ -22,9 +22,7 @@ def add_arguments(fn: cw.MainFn) -> cw.MainFn:
     fn = cw.click.option("-k", "--key")(fn)
     fn = cw.click.option("-m", "--mode", type=cw.click.Choice(["bash", "bash+uppercase"]), default="bash+uppercase")(fn)
     fn = cw.click.argument(
-        "config",
-        type=cw.click.Path(exists=False, dir_okay=False, resolve_path=True, path_type=Path),
-        default=Path("~/secrets.toml").expanduser(),
+        "config", type=cw.click.Path(exists=False, dir_okay=False, resolve_path=True, path_type=Path)
     )(fn)
     return fn
 
@@ -67,14 +65,6 @@ def load(path: Path, key: str = "", upper: bool = False) -> Any:
 
 @cw.command("fancy", add_arguments, process_options)
 def main(args: cw.Namespace) -> None:
-    log.debug("a debug level message")
-    log.info("an info level message")
-    log.warning("a warning level message")
-    for name in dir(args):
-        if name.startswith("_"):
-            continue
-        print(f"{name=}: ({type(getattr(args, name))}) {getattr(args, name)}")
-
     data = load_data(args.config, args.key)
     if args.dump:
         print(json.dumps(data, indent=2))
