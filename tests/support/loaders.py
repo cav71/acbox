@@ -3,14 +3,15 @@ from __future__ import annotations
 import dataclasses as dc
 import importlib.util
 import json
+import sys
 from pathlib import Path
 from types import ModuleType
 from typing import Any
 
-try:
+if sys.version_info >= (3, 11):
     import tomllib
-except ImportError:
-    import tomli as tomllib  # type: ignore[no-redef]
+else:
+    import tomli as tomllib  # type: ignore[import-not-found]
 
 import pytest
 

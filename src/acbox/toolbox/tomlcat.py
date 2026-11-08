@@ -9,14 +9,15 @@ import collections
 import copy
 import json
 import logging
+import sys
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-try:
+if sys.version_info >= (3, 11):
     import tomllib
-except ImportError:
-    import tomli as tomllib  # type: ignore[no-redef]
+else:
+    import tomli as tomllib  # type: ignore[import-not-found]
 
 import acbox.clickwrapper as cw
 
