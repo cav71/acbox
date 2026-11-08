@@ -105,21 +105,21 @@ jobs:
         # Use always() to always run this step to publish test results when there are test failures
         if: always()
 
-#   pypi-publish:
-#     name: upload release to PyPI
-#     runs-on: ubuntu-latest
-#     needs: build
-#     environment: pypi
-#     permissions:
-#       id-token: write
-#     steps:
-#       - name: Download Build Artifact
-#         uses: actions/download-artifact@v8
-#         with:
-#           name: qa-results-3.14-ubuntu-latest
-#           path: |
-#             build/qa-3.14-ubuntu-latest
-#       - name: Publish package distributions to PyPI
-#         uses: pypa/gh-action-pypi-publish@release/v1
-#         with:
-#            packages-dir: ./build/qa-3.14-ubuntu-latest
+  pypi-publish:
+    name: upload release to PyPI
+    runs-on: ubuntu-latest
+    needs: build
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: qa-results-3.14-ubuntu-latest
+          path: |
+            build/qa-3.14-ubuntu-latest
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+           packages-dir: ./build/qa-3.14-ubuntu-latest
