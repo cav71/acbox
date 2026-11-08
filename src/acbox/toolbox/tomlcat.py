@@ -138,18 +138,11 @@ def process(data: Any, upper: bool = False) -> Any:
     return result
 
 
-def load(path: Path, keys: str | list[str] = "", upper: bool = False) -> Any:
-    print(f"===> {keys=}")
-    data = []
-    for key in [keys] if isinstance(keys, str) else keys:
-        data.append([key, load_data(path, key)])
-    for item in data:
-        if not isinstance(item[1], Mapping):
-            item[1] = {item[0]: item[1]}
-    values = {}
-    for item in data:
-        values.update(item[1])
-    return process(values, upper)
+def load(path: Path | str, keys: str | list[str] = "") -> Any:
+    data = load_data(Path(path) if isinstance(path, str) else path, keys)
+    if isinstance(data, Mapping):
+        return {k.lower(): v for k, v in data.items()}
+    return data
 
 
 @cw.command("fancy", add_arguments, process_options)
