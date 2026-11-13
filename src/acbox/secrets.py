@@ -6,6 +6,12 @@ from pathlib import Path
 from cryptography.fernet import Fernet
 
 
+def file_digest(path: Path) -> str:
+    h = hashlib.new("sha256")
+    h.update(path.read_bytes())
+    return h.hexdigest()
+
+
 @dc.dataclass
 class Key:
     key: bytes
@@ -32,10 +38,9 @@ def read_key(path: Path) -> Key | None:
                 result = "".join(line for line in lines if line.strip())
                 if len(result) < 32 * 3:
                     raise RuntimeError("short key in path", path)
-                with path.open("rb") as fp:
-                    key = base64.urlsafe_b64encode(hashlib.sha256(result.encode("utf-8")).digest())
-                    digest = hashlib.file_digest(fp, "sha256").hexdigest()
-                    return Key(key, digest, path)
+                key = base64.urlsafe_b64encode(hashlib.sha256(result.encode("utf-8")).digest())
+                digest = file_digest(path)
+                return Key(key, digest, path)
             lines.append(line)
     return None
 
