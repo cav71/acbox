@@ -21,7 +21,7 @@ def test_lookup(resolver, tmp_path):
 
 def test_encrypt(resolver, tmp_path):
     key = secrets.lookup(resolver.lookup("secrets/key"))
-    data = resolver.load("secrets/tomlcat.example.toml", mode="text")
+    data = resolver.load("tomlcat.example.toml", mode="text")
 
     encrypted = secrets.encrypt(data, key)
     decrypted = secrets.decrypt(encrypted, key)

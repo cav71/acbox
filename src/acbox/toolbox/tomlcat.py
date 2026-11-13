@@ -51,8 +51,9 @@ class KeepCaseBashProcessor(Processor):
             for key, value in data.items():
                 keys.append(key.upper() if upper is True else key.lower() if upper is False else key)
                 print(f'{keys[-1]}="{value}"')
-            print()
-            print(f"export {' '.join(keys)}")
+            if data:
+                print()
+                print(f"export {' '.join(keys)}")
         else:
             print(data)
 
@@ -80,6 +81,10 @@ class LowerCaseBashProcessor(KeepCaseBashProcessor):
 def add_arguments(fn: cw.MainFn) -> cw.MainFn:
     fn = cw.click.option("-d", "--dump", is_flag=True)(fn)
     fn = cw.click.option("-k", "--key", multiple=True)(fn)
+    fn = cw.click.option("-e", "--encrypt", is_flag=True, help="uses a private ssh key to descript the config file")(fn)
+    fn = cw.click.option(
+        "--encrypt-path", type=cw.click.Path(exists=False, dir_okay=False, resolve_path=True, path_type=Path)
+    )(fn)
 
     fn = cw.click.option("-m", "--mode", type=cw.click.Choice(Processor.collect()), default="bash+uppercase")(fn)
     fn = cw.click.argument(
@@ -89,7 +94,11 @@ def add_arguments(fn: cw.MainFn) -> cw.MainFn:
 
 
 def process_options(options: cw.Namespace) -> None:
-    pass
+
+    from ..secrets import SecretPath
+
+    if options.encrypt:
+        options.config = SecretPath(options.config, key=options.encrypt_path)
 
 
 def tget(data: Mapping, key: str = "", pointer: bool = False) -> Any:
@@ -147,6 +156,11 @@ def load(path: Path | str, keys: str | list[str] = "") -> Any:
 
 @cw.command("fancy", add_arguments, process_options)
 def main(args: cw.Namespace) -> None:
+    """reads data stored in a .toml file and dump values in a different format
+
+    Eg.
+        acbox-tomlcat -k some-key secrets.toml
+    """
     data = load_data(args.config, args.key)
     if args.dump:
         print(json.dumps(data, indent=2) if isinstance(data, Mapping) else data)
