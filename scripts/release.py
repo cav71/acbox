@@ -85,7 +85,8 @@ def main(args: Namespace) -> None:
     lines[lineno] = newline
 
     # updating pyproject
-    pyproject.write_text("\n".join(line[1] for line in lines))
+    if args.commit:
+        pyproject.write_text("\n".join(line[1] for line in lines))
     run(["git", "commit", "-m", f"release bump {sversion} -> {snextversion}", pyproject])
 
     # pushing it out
