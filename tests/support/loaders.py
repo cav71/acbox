@@ -56,6 +56,8 @@ def resolver(request):
                 return json.loads(source.read_text())
             elif mode == "text":
                 return source.read_text()
+            elif mode == "bytes":
+                return source.read_bytes()
             elif mode == "mod":
                 return loadmod(source)
             elif mode == "toml":
