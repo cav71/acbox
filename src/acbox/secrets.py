@@ -1,7 +1,8 @@
 import base64
 import dataclasses as dc
 import hashlib
-from pathlib import Path
+import sys
+from pathlib import Path, PosixPath, WindowsPath
 
 from cryptography.fernet import Fernet
 
@@ -79,15 +80,56 @@ def decrypt(content: bytes, key: Key | None) -> str:
     return cypher.decrypt(data).decode("utf-8")
 
 
-class SecretPath(Path):
+if sys.version_info < (3, 12):
+
+    class SecretPathBase(Path):
+        _flavour = WindowsPath._flavour if sys.platform == "win32" else PosixPath._flavour  # type: ignore[attr-defined]
+else:
+
+    class SecretPathBase(Path):
+        pass
+
+
+class SecretPath(SecretPathBase):
+    def __new__(cls, *args, **kwargs):
+        key = kwargs.pop("key", None)
+        instance = super().__new__(cls, *args)
+        instance.key = key
+        return instance
+
     def __init__(self, *args, **kwargs):
-        self.key = kwargs.pop("key", getattr(self, "key", None))
-        super().__init__(*args, **kwargs)
+        kwargs.pop("key", None)
+        if sys.version_info < (3, 12):
+            pass
+        else:
+            super().__init__(*args, **kwargs)
+
+    @classmethod
+    def _from_parts(cls, args, **kwargs):
+        key = kwargs.pop("key", None)
+        instance = super()._from_parts(args)
+        instance.key = key
+        return instance
+
+    def _make_child_relpath(self, part):
+        ret = super()._make_child_relpath(part)
+        ret.key = self.key
+        return ret
 
     def with_segments(self, *pathsegments):
         ret = super().with_segments(*pathsegments)
         ret.key = ret.key or self.key
         return ret
 
+    def expanduser(self):
+        ret = super().expanduser()
+        ret.key = self.key
+        return ret
+
+    def resolve(self, *args, **kwargs):
+        ret = super().resolve(*args, **kwargs)
+        ret.key = self.key
+        return ret
+
     def read_text(self, *args, **kwargs) -> str:
-        return decrypt(super().read_bytes(*args, **kwargs), self.key)
+        return decrypt(super().read_bytes(*args, **kwargs), self.key)  # type: ignore[attr-defined]
