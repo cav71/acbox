@@ -21,6 +21,8 @@ else:
 
 import acbox.clickwrapper as cw
 
+from .. import secrets
+
 log = logging.getLogger(__name__)
 
 
@@ -79,13 +81,24 @@ class LowerCaseBashProcessor(KeepCaseBashProcessor):
 
 
 def add_arguments(fn: cw.MainFn) -> cw.MainFn:
-    fn = cw.click.option("-d", "--dump", is_flag=True)(fn)
-    fn = cw.click.option("-k", "--key", multiple=True)(fn)
-    fn = cw.click.option("-e", "--encrypt", is_flag=True, help="uses a private ssh key to descript the config file")(fn)
-    fn = cw.click.option(
-        "--encrypt-path", type=cw.click.Path(exists=False, dir_okay=False, resolve_path=True, path_type=Path)
+
+    fn = cw.cloup.option_group(
+        "action",
+        cw.click.option("-d", "--dump", is_flag=True),
+        cw.click.option("--encrypt", is_flag=True),
+        cw.click.option("--decrypt", is_flag=True),
+        cw.cloup.constraints.AcceptAtMost(1),
     )(fn)
 
+    fn = cw.cloup.option_group(
+        "encryption",
+        cw.click.option("-e", "--encrypted", is_flag=True, help="uses a private ssh key to descript the config file"),
+        cw.click.option(
+            "--encrypted-path", type=cw.click.Path(exists=False, dir_okay=False, resolve_path=True, path_type=Path)
+        ),
+    )(fn)
+
+    fn = cw.click.option("-k", "--key", multiple=True)(fn)
     fn = cw.click.option("-m", "--mode", type=cw.click.Choice(Processor.collect()), default="bash+uppercase")(fn)
     fn = cw.click.argument(
         "config", type=cw.click.Path(exists=False, dir_okay=False, resolve_path=True, path_type=Path)
@@ -94,11 +107,9 @@ def add_arguments(fn: cw.MainFn) -> cw.MainFn:
 
 
 def process_options(options: cw.Namespace) -> None:
-
-    from ..secrets import SecretPath
-
-    if options.encrypt:
-        options.config = SecretPath(options.config, key=options.encrypt_path)
+    options.config = secrets.SecretPath(
+        options.config, key=secrets.lookup(options.encrypted_path) if options.encrypted else None
+    )
 
 
 def tget(data: Mapping, key: str = "", pointer: bool = False) -> Any:
@@ -164,6 +175,16 @@ def main(args: cw.Namespace) -> None:
     data = load_data(args.config, args.key)
     if args.dump:
         print(json.dumps(data, indent=2) if isinstance(data, Mapping) else data)
+        return
+    elif args.encrypt:
+        if key := secrets.lookup(args.encrypted_path):
+            out = secrets.encrypt(args.config.read_text(), key=key)
+            print(out.decode("utf-8"))
+        else:
+            print(args.config.read_text())
+        return
+    elif args.decrypt:
+        print(args.config.read_text())
         return
 
     processor = Processor.collect()[args.mode]

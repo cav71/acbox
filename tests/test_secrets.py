@@ -26,3 +26,14 @@ def test_encrypt(resolver, tmp_path):
     encrypted = secrets.encrypt(data, key)
     decrypted = secrets.decrypt(encrypted, key)
     assert decrypted == data
+
+
+def test_secretpath():
+    path = secrets.SecretPath("blah", key=11)
+    assert path.key == 11
+
+    path1 = path.expanduser()
+    assert path.key == 11 and path1.key == 11
+
+    path2 = path1.resolve()
+    assert path.key == 11 and path1.key == 11 and path2.key == 11

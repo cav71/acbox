@@ -74,15 +74,20 @@ def decrypt(content: bytes, key: Key | None) -> str:
     if header and (match := key.match(header)) is False:
         raise RuntimeError("no encrypted or matching header")
     if match is None:
-        return (b"\n".join([header, data])).decode("uft-8")
+        return (b"\n".join([header, data])).decode("utf-8")
     cypher = Fernet(key.key)
     return cypher.decrypt(data).decode("utf-8")
 
 
 class SecretPath(Path):
     def __init__(self, *args, **kwargs):
-        self.key = lookup(kwargs.pop("key", None))
+        self.key = kwargs.pop("key", getattr(self, "key", None))
         super().__init__(*args, **kwargs)
+
+    def with_segments(self, *pathsegments):
+        ret = super().with_segments(*pathsegments)
+        ret.key = ret.key or self.key
+        return ret
 
     def read_text(self, *args, **kwargs) -> str:
         return decrypt(super().read_bytes(*args, **kwargs), self.key)

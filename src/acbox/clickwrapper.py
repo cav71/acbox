@@ -6,6 +6,7 @@ from typing import Any, Callable, Sequence
 
 import click
 import cloup
+import cloup.constraints
 from rich.console import Console
 from rich.logging import RichHandler
 
