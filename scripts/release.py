@@ -24,6 +24,18 @@ def add_arguments(fn: cw.MainFn) -> cw.MainFn:
     return fn
 
 
+def raise_if_modified():
+    out = [
+        line
+        for line in subprocess.check_output(["git", "status", "--porcelain"], text=True).split("\n")
+        if line.strip()
+    ]
+    changed = [line for line in out if (not line.startswith("??"))]
+    if changed:
+        txt = " | " + "\n | ".join(changed)
+        raise RuntimeError(f"found modifications:\n{txt}")
+
+
 def get_pyproject(path: Path) -> tuple[list[tuple[int, str]], dict]:
     lines = []
     data = {}
@@ -49,6 +61,7 @@ def bump(version: list[int], mode: str) -> list[int]:
 
 @cw.command("fancy", add_arguments)
 def main(args: Namespace) -> None:
+    raise_if_modified()
 
     # first we get the local version
     pyproject = Path("pyproject.toml")
@@ -76,6 +89,7 @@ def main(args: Namespace) -> None:
             print("dry run:", " ".join(cmdline))
 
     # first tagging the code
+    run(["git", "commit", "-m", f"release v{sversion}", "--allow-empty"])
     run(["git", "tag", "-m", "release", f"v{sversion}"])
 
     newline = lineno, f'version = "{snextversion}"'
