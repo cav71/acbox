@@ -28,6 +28,7 @@ classifiers = [
 dependencies = [
     "click",
     "cloup",
+    "cryptography",
 #    "filetype",
     "rich",
 #    "pydantic",
