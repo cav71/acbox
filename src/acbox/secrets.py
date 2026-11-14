@@ -18,14 +18,20 @@ class Key:
     key: bytes
     digest: str
     path: Path | None = None
+    TAG: str = ">enc"
+
+    @staticmethod
+    def is_encrypted(path: Path) -> bool:
+        with path.open("r") as fp:
+            return fp.read(len(Key.TAG)) == Key.TAG
 
     def header(self) -> str:
-        return f"> {self.digest} {self.path}"
+        return f"{Key.TAG} {self.digest} {self.path}"
 
     def match(self, header: bytes) -> bool | None:
-        if not (self.key and header.startswith(b"> ")):
+        if not (self.key and header.startswith(Key.TAG.encode("utf-8"))):
             return None
-        return header.startswith(f"> {self.digest}".encode("utf-8"))
+        return header.startswith(f"{Key.TAG} {self.digest}".encode("utf-8"))
 
 
 def read_key(path: Path) -> Key | None:
@@ -46,8 +52,8 @@ def read_key(path: Path) -> Key | None:
     return None
 
 
-def lookup(path: Path | None = None) -> Key | None:
-    path = path or Path("~/.ssh").expanduser().resolve()
+def lookup(path: Path | str | None = None) -> Key | None:
+    path = Path(path or Path("~/.ssh").expanduser().resolve())
     if path.is_file():
         return read_key(path)
 

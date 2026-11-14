@@ -9,7 +9,7 @@ def test_read_key(resolver):
     assert isinstance(key, secrets.Key)
 
 
-def test_lookup(resolver, tmp_path):
+def test_lookup(resolver):
     key = secrets.lookup(resolver.lookup("secrets/key.pub"))
     assert key is None
 
@@ -19,13 +19,29 @@ def test_lookup(resolver, tmp_path):
     assert key == secrets.lookup(resolver.lookup("secrets"))
 
 
-def test_encrypt(resolver, tmp_path):
+def test_encrypt(resolver):
     key = secrets.lookup(resolver.lookup("secrets/key"))
     data = resolver.load("tomlcat.example.toml", mode="text")
 
     encrypted = secrets.encrypt(data, key)
     decrypted = secrets.decrypt(encrypted, key)
     assert decrypted == data
+
+
+def test_roundtrip(resolver, tmp_path):
+    key = secrets.lookup(resolver.lookup("secrets/key"))
+    path = resolver.lookup("tomlcat.example.toml")
+    assert not secrets.Key.is_encrypted(path)
+
+    # encrypt
+    encrypted = tmp_path / "encrypted.toml"
+    secrets.encrypt(path.read_text(), key, encrypted)
+    assert secrets.Key.is_encrypted(encrypted)
+    assert encrypted.read_text() != path.read_text()
+
+    # verify decrypted content
+    found = secrets.decrypt(encrypted.read_bytes(), key)
+    assert found == path.read_text()
 
 
 def test_secretpath():

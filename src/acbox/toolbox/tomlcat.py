@@ -107,9 +107,8 @@ def add_arguments(fn: cw.MainFn) -> cw.MainFn:
 
 
 def process_options(options: cw.Namespace) -> None:
-    options.config = secrets.SecretPath(
-        options.config, key=secrets.lookup(options.encrypted_path) if options.encrypted else None
-    )
+    key = secrets.lookup(options.encrypted_path) if (options.encrypted or options.decrypt) else None
+    options.config = secrets.SecretPath(options.config, key=key)
 
 
 def tget(data: Mapping, key: str = "", pointer: bool = False) -> Any:
@@ -143,7 +142,15 @@ def tgets(data: Mapping, keys: str | list[str] = "", pointer: bool = False) -> A
 def load_data(path: Path, keys: str | list[str] = "") -> Any:
     path = path.expanduser().resolve()
     data = tomllib.loads(path.read_text())
-    return tgets(data, keys)
+    return tgets(data, keys) if keys else data
+
+
+def load(path: Path | str, keys: str | list[str] = "", keypath: Path | str | None = None) -> Any:
+    spath = secrets.SecretPath(path, key=secrets.lookup(keypath))
+    data = load_data(spath, keys)
+    if isinstance(data, Mapping):
+        return {k.lower(): v for k, v in data.items()}
+    return data
 
 
 def process(data: Any, upper: bool = False) -> Any:
@@ -158,13 +165,6 @@ def process(data: Any, upper: bool = False) -> Any:
     return result
 
 
-def load(path: Path | str, keys: str | list[str] = "") -> Any:
-    data = load_data(Path(path) if isinstance(path, str) else path, keys)
-    if isinstance(data, Mapping):
-        return {k.lower(): v for k, v in data.items()}
-    return data
-
-
 @cw.command("fancy", add_arguments, process_options)
 def main(args: cw.Namespace) -> None:
     """reads data stored in a .toml file and dump values in a different format
@@ -172,11 +172,7 @@ def main(args: cw.Namespace) -> None:
     Eg.
         acbox-tomlcat -k some-key secrets.toml
     """
-    data = load_data(args.config, args.key)
-    if args.dump:
-        print(json.dumps(data, indent=2) if isinstance(data, Mapping) else data)
-        return
-    elif args.encrypt:
+    if args.encrypt:
         if key := secrets.lookup(args.encrypted_path):
             out = secrets.encrypt(args.config.read_text(), key=key)
             print(out.decode("utf-8"))
@@ -185,6 +181,11 @@ def main(args: cw.Namespace) -> None:
         return
     elif args.decrypt:
         print(args.config.read_text())
+        return
+
+    data = load_data(args.config, args.key)
+    if args.dump:
+        print(json.dumps(data, indent=2) if isinstance(data, Mapping) else data)
         return
 
     processor = Processor.collect()[args.mode]
