@@ -11,7 +11,7 @@ import darkdetect
 
 from .clickextra import ArgsType, MainFn, options, parse_options_argument
 
-STANDARD_OPTIONS = ["logging", "dryrun"]
+DEFAULT_OPTIONS = ["logging", "dryrun"]
 
 
 @options(register="logging")
@@ -54,7 +54,7 @@ def process_dryrun(args: ArgsType) -> None:
 
 
 def command(*args0, **kwargs0) -> Callable[[MainFn], Any]:
-    optionfns = parse_options_argument(kwargs0.pop("options", STANDARD_OPTIONS))
+    optionfns = parse_options_argument(kwargs0.pop("options", DEFAULT_OPTIONS))
 
     def _command0(fn: MainFn):
         @functools.wraps(fn)

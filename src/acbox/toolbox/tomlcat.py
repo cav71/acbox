@@ -22,7 +22,7 @@ else:
 import click
 import cloup
 
-from acbox.click import STANDARD_OPTIONS, ArgsType, MainFn, command, options
+from acbox.click import DEFAULT_OPTIONS, ArgsType, MainFn, command, options
 
 from .. import secrets
 
@@ -167,7 +167,7 @@ def process(data: Any, upper: bool = False) -> Any:
     return result
 
 
-@command(options=[*STANDARD_OPTIONS, new_options])
+@command(options=[*DEFAULT_OPTIONS, new_options])
 def main(args: ArgsType) -> None:
     """reads data stored in a .toml file and dump values in a different format
 

@@ -14,7 +14,7 @@ import click
 import cloup
 import humanize
 
-from acbox.click import STANDARD_OPTIONS, ArgsType, MainFn, command, options
+from acbox.click import DEFAULT_OPTIONS, ArgsType, MainFn, command, options
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ def app_wrapping(args: ArgsType) -> Generator[Callable, None, None]:
     yield callback
 
 
-@command(options=[*STANDARD_OPTIONS, add_arguments])
+@command(options=[*DEFAULT_OPTIONS, add_arguments])
 def main(args: ArgsType) -> None:
     log.debug("a debug level message")
     log.info("an info level message")
