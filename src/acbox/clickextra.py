@@ -1,11 +1,25 @@
 from __future__ import annotations
 
+import contextlib
 import dataclasses as dc
 import inspect
+from argparse import Namespace
 from collections.abc import Callable
-from typing import Any
+from typing import Any, TypeAlias
+
+ArgsType: TypeAlias = Namespace
+MainFn = Callable[[ArgsType], Any]
+OptionsFn = Callable[[ArgsType], ArgsType | None]
+
 
 REGISTRY: dict[str, Options] = {}
+
+
+@dc.dataclass
+class Wrapped:
+    fn: Callable | None = None
+    process: Callable | None = None
+    context: Callable | None = None
 
 
 @dc.dataclass
@@ -14,6 +28,11 @@ class Options:
     process_options: Callable | None = None
     with_context: Callable | None = None
     key: str | None = None
+    wrapped: Wrapped = dc.field(default_factory=Wrapped)
+
+    def __post_init__(self):
+        assert self.fn
+        self.wrapped = Wrapped(self.fn)
 
     def __repr__(self):
         tag = f" register='{self.key}'" if self.key else ""
@@ -26,7 +45,7 @@ class Options:
             raise RuntimeError(f"None returning function '{self.fn.__name__}' in {loc}")
         return ret
 
-    def process(self, fn):
+    def process(self, fn: OptionsFn) -> OptionsFn:
         @dc.dataclass
         class X:
             fn: Callable
@@ -34,16 +53,18 @@ class Options:
             def __call__(self, *args, **kwargs):
                 return self.fn(*args, **kwargs)
 
+        self.wrapped.process = fn
         self.process_options = X(fn)
         return fn
 
-    def context(self, fn):
-        self.with_context = fn
+    def contextmanager(self, fn: OptionsFn) -> OptionsFn:
+        self.wrapped.context = fn
+        self.with_context = contextlib.contextmanager(fn)  # type: ignore[arg-type]
         return fn
 
 
 def options(register=None):
-    def _fn(fn):
+    def _fn(fn: OptionsFn) -> Options:
         out = Options(fn)
         if register:
             if register in REGISTRY:
