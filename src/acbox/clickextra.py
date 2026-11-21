@@ -19,8 +19,7 @@ REGISTRY: dict[str, Options] = {}
 class Wrapped:
     fn: Callable | None = None
     process: Callable[[ArgsType], ArgsType | None] | None = None
-    # context: Callable[[ArgsType], ArgsType | None] | None = None
-    context: Callable | None = None
+    context: Callable[[ArgsType], ArgsType | None] | None = None
 
 
 @dc.dataclass
