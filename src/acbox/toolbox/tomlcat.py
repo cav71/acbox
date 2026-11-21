@@ -19,7 +19,10 @@ if sys.version_info >= (3, 11):
 else:
     import tomli as tomllib  # type: ignore[import-not-found, unused-ignore]
 
-import acbox.clickwrapper as cw
+import click
+import cloup
+
+from acbox.click import STANDARD_OPTIONS, ArgsType, MainFn, command, options
 
 from .. import secrets
 
@@ -80,33 +83,32 @@ class LowerCaseBashProcessor(KeepCaseBashProcessor):
         KeepCaseBashProcessor._run(data, upper=False)
 
 
-def add_arguments(fn: cw.MainFn) -> cw.MainFn:
-
-    fn = cw.cloup.option_group(
+@options()
+def new_options(fn: MainFn) -> MainFn:
+    fn = cloup.option_group(
         "action",
-        cw.click.option("-d", "--dump", is_flag=True),
-        cw.click.option("--encrypt", is_flag=True),
-        cw.click.option("--decrypt", is_flag=True),
-        cw.cloup.constraints.AcceptAtMost(1),
+        click.option("-d", "--dump", is_flag=True),
+        click.option("--encrypt", is_flag=True),
+        click.option("--decrypt", is_flag=True),
+        cloup.constraints.AcceptAtMost(1),
     )(fn)
 
-    fn = cw.cloup.option_group(
+    fn = cloup.option_group(
         "encryption",
-        cw.click.option("-e", "--encrypted", is_flag=True, help="uses a private ssh key to descript the config file"),
-        cw.click.option(
-            "--encrypted-path", type=cw.click.Path(exists=False, dir_okay=False, resolve_path=True, path_type=Path)
+        click.option("-e", "--encrypted", is_flag=True, help="uses a private ssh key to descript the config file"),
+        click.option(
+            "--encrypted-path", type=click.Path(exists=False, dir_okay=False, resolve_path=True, path_type=Path)
         ),
     )(fn)
 
-    fn = cw.click.option("-k", "--key", multiple=True)(fn)
-    fn = cw.click.option("-m", "--mode", type=cw.click.Choice(Processor.collect()), default="bash+uppercase")(fn)
-    fn = cw.click.argument(
-        "config", type=cw.click.Path(exists=False, dir_okay=False, resolve_path=True, path_type=Path)
-    )(fn)
+    fn = click.option("-k", "--key", multiple=True)(fn)
+    fn = click.option("-m", "--mode", type=click.Choice(Processor.collect()), default="bash+uppercase")(fn)
+    fn = click.argument("config", type=click.Path(exists=False, dir_okay=False, resolve_path=True, path_type=Path))(fn)
     return fn
 
 
-def process_options(options: cw.Namespace) -> None:
+@new_options.process
+def process_options(options: ArgsType) -> None:
     key = secrets.lookup(options.encrypted_path) if (options.encrypted or options.decrypt) else None
     options.config = secrets.SecretPath(options.config, key=key)
 
@@ -165,8 +167,8 @@ def process(data: Any, upper: bool = False) -> Any:
     return result
 
 
-@cw.command("fancy", add_arguments, process_options)
-def main(args: cw.Namespace) -> None:
+@command(options=[*STANDARD_OPTIONS, new_options])
+def main(args: ArgsType) -> None:
     """reads data stored in a .toml file and dump values in a different format
 
     Eg.
