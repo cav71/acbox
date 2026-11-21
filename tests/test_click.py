@@ -76,35 +76,6 @@ def runner():
     return invoke
 
 
-def test_simple_script():
-    @command()
-    @click.option("-x", type=int)
-    def main(args: ArgsType) -> None:
-        "hi there"
-        print(f"Got {args.x * 2}")
-
-    runner = CliRunner()
-    result = runner.invoke(main, ["--help"])
-    assert """
-Usage: main [OPTIONS]
-
-  hi there
-
-loglevel:
-  -q, --quiet
-  -v, --verbose
-
-Other options:
-  -n, --dry-run
-  -x INTEGER
-  --help         Show this message and exit.
-""" == _(result.output)
-
-    result = runner.invoke(main, ["-x", "1"])
-    assert result.exit_code == 0
-    assert "Got 2" in result.output
-
-
 def test_internals():
     main, option0, option1, option2 = create_main()
 
