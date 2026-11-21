@@ -1,43 +1,76 @@
-#!/usr/bin/env python
-import argparse
-import logging
+#!/usr/bin/env python3
+"""simple test script"""
+# /// script
+# dependencies = [
+# "acbox",
+# ]
+# ///
 
-from acbox.cli.flags.logging import add_arguments_logging
-from acbox.cli.script import cli
+import logging
+import time
+from collections.abc import Callable, Generator
+
+import click
+import cloup
+import humanize
+
+from acbox.click import STANDARD_OPTIONS, ArgsType, MainFn, command, options
 
 log = logging.getLogger(__name__)
 
 
-def add_arguments(parser: argparse.ArgumentParser) -> None:
-    add_arguments_logging(parser)
+@options()
+def add_arguments(fn: MainFn) -> MainFn:
+    fn = click.option("-a", type=int)(fn)
+    fn = cloup.option_group(
+        "action",
+        click.option("-b", is_flag=True),
+        click.option("-c", is_flag=True),
+        click.option("-d", is_flag=True),
+        click.option("-e", is_flag=True),
+        cloup.constraints.AcceptAtMost(1),
+    )(fn)
+    return fn
 
 
-@cli(add_arguments)
-def main(args: argparse.Namespace):
-    # show some logging info
-    log.debug("a debug message, need to use -v|--verbose to display it")
-    log.info("an info message, you can silence it with -q|--quiet")
-    log.warning("a warning!")
+@add_arguments.process
+def process_options(options: ArgsType) -> None:
+    options.a = (options.a or 1) * 99
 
-    # args is a argparse.Namespace instance. Attributes always defined are:
-    #   .config - points to a config file might be present or not
-    #   .error - callable, to abort a script with a nice error message
-    #   .modules - list of modules leading to this script
 
-    print("args:")
-    for name in dir(args):
-        if name.startswith("_"):
+@add_arguments.contextmanager
+def app_wrapping(args: ArgsType) -> Generator[Callable, None, None]:
+    t0 = time.monotonic()
+    print("STARTING APP")
+
+    def callback(*args, **kwargs):
+        delta = time.monotonic() - t0
+        fmt = humanize.naturaldelta(delta, minimum_unit="microseconds")
+        print(f"ENDING APP AFTER {fmt}")
+
+    yield callback
+
+
+@command(options=[*STANDARD_OPTIONS, add_arguments])
+def main(args: ArgsType) -> None:
+    log.debug("a debug level message")
+    log.info("an info level message")
+    log.warning("a warning level message")
+
+    for key, value in sorted(args.__dict__.items()):
+        if key in {"error", "exit", "verbose"}:
             continue
-        value = getattr(args, name)
-        kind = type(value)
-        if name == "error":
-            kind, value = "callable", "abort a script with an error message"
-        if kind is list:
-            print(f"  .{name}: ({kind})")
-            for item in value:
-                print(f"     {item}")
-        else:
-            print(f"  .{name}: ({kind}) {value}")
+        print(f"{key=}: {value} ({type(value)})")
+
+    # raise an error
+    if args.b:
+        raise RuntimeError("an error message", 99)
+    elif args.c:
+        raise click.ClickException("Something went wrong with your command!")
+    elif args.d:
+        raise click.UsageError("An error in usage")
+    elif args.e:
+        raise click.BadParameter("this parameter is bad", param_hint="-e|--e")
 
 
 if __name__ == "__main__":

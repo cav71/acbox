@@ -31,6 +31,7 @@ dependencies = [
     "cryptography",
     "darkdetect",
 #    "filetype",
+    "humanize",
     "rich",
 #    "pydantic",
 #    "pyyaml",
