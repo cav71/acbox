@@ -7,6 +7,7 @@ from typing import Any
 
 import click
 import cloup
+import darkdetect
 
 from .clickextra import ArgsType, MainFn, options, parse_options_argument
 
@@ -78,6 +79,10 @@ def command(*args0, **kwargs0) -> Callable[[MainFn], Any]:
         wrapped = _command1
         for optionfn in optionfns:
             wrapped = optionfn(wrapped)
+
+        kwargs0["formatter_settings"] = kwargs0.get("formatter_settings") or cloup.HelpFormatter.settings(
+            theme=cloup.HelpTheme.dark() if darkdetect.isDark() else cloup.HelpTheme.light()
+        )
         cmd = cloup.command(*args0, **kwargs0)(wrapped)
         assert not getattr(cmd, "fn", None)
         cmd.fn = fn

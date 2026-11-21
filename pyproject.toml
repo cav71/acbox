@@ -29,6 +29,7 @@ dependencies = [
     "click",
     "cloup",
     "cryptography",
+    "darkdetect",
 #    "filetype",
     "rich",
 #    "pydantic",
