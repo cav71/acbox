@@ -2,7 +2,7 @@ import contextlib
 import functools
 import logging
 from argparse import Namespace
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import Any
 
 import click
@@ -89,3 +89,35 @@ def command(*args0, **kwargs0) -> Callable[[MainFn], Any]:
         return cmd
 
     return _command0
+
+
+def group(*args, **kwargs):
+    optionfns = parse_options_argument(kwargs.pop("options", []))
+    formatter_settings = cloup.HelpFormatter.settings(
+        theme=cloup.HelpTheme.dark() if darkdetect.isDark() else cloup.HelpTheme.light()
+    )
+
+    class CustomGroup(cloup.Group):
+        def command(  # type: ignore[override]
+            self,
+            name: str | None = None,
+            *,
+            aliases: Iterable[str] | None = None,
+            section: cloup.Section | None = None,
+            **kwargs,
+        ):
+            def wrapper(fn):
+                options = optionfns or kwargs.pop("options", DEFAULT_OPTIONS)
+
+                cmd = command(name, section, aliases=aliases, formatter_settings=formatter_settings, options=options)(
+                    fn
+                )
+                self.add_command(cmd, section=section)
+                return cmd
+
+            return wrapper
+
+    kwargs["cls"] = CustomGroup
+    kwargs["formatter_settings"] = formatter_settings
+    kwargs["show_subcommand_aliases"] = True
+    return cloup.group(*args, **kwargs)
