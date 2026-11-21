@@ -1,12 +1,10 @@
 import inspect
-from collections.abc import Callable, Generator
 from textwrap import dedent
 
-import click
 import pytest
 from click.testing import CliRunner
 
-from acbox.click import ArgsType, MainFn, command, options
+from acbox import utils
 
 
 def _(txt: str, strip: bool = True) -> str:
@@ -15,58 +13,10 @@ def _(txt: str, strip: bool = True) -> str:
     return ret[:-1] if (strip and ret.endswith("\n\n")) else ret
 
 
-def create_main():
-    @options()
-    def option0(fn):
-        "the doubler"
-        return click.option("--doubler", is_flag=True)(fn)
-
-    @option0.contextmanager
-    def option0_context(options: ArgsType) -> Generator[Callable, None, None]:
-        "doubling action"
-
-        def doubler(ret: int) -> int:
-            if options.doubler or options.x == 8:
-                print(f"AFTER DOUBLING -> {ret * 2}")
-                return ret * 2
-            return ret
-
-        yield doubler
-
-    @options()
-    def option1(fn: MainFn) -> MainFn:
-        "option1 doctext"
-        return click.option("-x", type=int)(fn)
-
-    @option1.process
-    def process(args: ArgsType) -> None:
-        "option1 process doctext"
-        args.x = args.x or 0
-
-    @options()
-    def option2(fn: MainFn) -> MainFn:
-        "option2 doctext"
-        return click.option("-y", type=int)(fn)
-
-    @option2.process
-    def process(args: ArgsType) -> ArgsType:  # noqa: F811
-        "option2 process doctext"
-        args.y = args.y or 0
-        return args
-
-    @command(options=[option0, option1, option2])
-    def main(args: ArgsType) -> int:
-        "hi there"
-        print(f"Got for x {args.x}")
-        print(f"Got for y {args.y}")
-        return args.x + args.y
-
-    return main, option0, option1, option2
-
-
 @pytest.fixture(scope="function")
-def runner():
-    main = create_main()[0]
+def runner(resolver):
+    mod = utils.loadmod(resolver.lookup("cli/test.py"))
+    main = mod.main
 
     def invoke(*args, **kwargs):
         runner = CliRunner()
@@ -76,12 +26,18 @@ def runner():
     return invoke
 
 
-def test_internals():
-    main, option0, option1, option2 = create_main()
+def test_internals(resolver):
+    mod = utils.loadmod(resolver.lookup("cli/test.py"))
+    main, option0, option1, option2 = (
+        mod.main,
+        mod.option0,
+        mod.option1,
+        mod.option2,
+    )
 
     assert """
 @options()
-def option0(fn):
+def option0(fn: MainFn) -> MainFn:
     "the doubler"
     return click.option("--doubler", is_flag=True)(fn)
 """ == _(inspect.getsource(option0.fn))
@@ -92,11 +48,13 @@ def option0(fn):
 @option0.contextmanager
 def option0_context(options: ArgsType) -> Generator[Callable, None, None]:
     "doubling action"
+
     def doubler(ret: int) -> int:
         if options.doubler or options.x == 8:
             print(f"AFTER DOUBLING -> {ret * 2}")
             return ret * 2
         return ret
+
     yield doubler
 """ == _(inspect.getsource(option0.with_context))
     assert option0.with_context.__wrapped__ is option0.wrapped.context
@@ -130,8 +88,8 @@ def option2(fn: MainFn) -> MainFn:
     assert "option2 doctext" == option2.fn.__doc__
 
     assert """
-@option2.process
-def process(args: ArgsType) -> ArgsType:
+@option2.process  # type: ignore[no-redef]
+def process(args: ArgsType) -> ArgsType:  # noqa: F811
     "option2 process doctext"
     args.y = args.y or 0
     return args
