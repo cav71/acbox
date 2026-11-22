@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import dataclasses as dc
+import json
 import logging
 from pathlib import Path
-from typing import Any, Literal, Sequence
+from typing import Any, Sequence
+
+from . import utils
 
 logger = logging.getLogger(__name__)
 
@@ -23,30 +26,33 @@ class LoaderBase:
     def __post_init__(self):
         self.paths = [Path(p).expanduser() for p in (self.paths or [])]
 
-    def lookup(self, name: Path | str) -> Path | None:
+    def lookup(self, name: Path | str, abort: bool = False) -> Path | None:
         for item in self.paths or [Path.cwd()]:
             if (found := (item / name)).exists():
                 return found
+        if abort:
+            raise FileNotFoundError(2, "cannot lookup name", name, self.paths)
         return None
 
-    def load(self, name: Path | str, mode: Literal["auto", "binary", "raw", "text"] = "auto") -> Any:
-        if not (path := self.lookup(name)):
-            raise FileNotFoundError(2, "cannot lookup name", name)
+    def load(self, name: Path | str, mode: str | None = None, abort: bool = True) -> Any:
+        if not (path := self.lookup(name, abort=abort)):
+            return None
+        mode = mode or path.suffix.strip(".").lower()
 
-        if mode in {"binary", "raw"}:
-            return path.read_bytes()
+        if mode == "json":
+            return json.loads(path.read_text())
         elif mode == "text":
             return path.read_text()
-
-        kind = path.suffix
-        if kind.upper() in {".JSON"}:
-            from json import loads
-
-            return loads(self.load(path.absolute(), "text"))
-        elif kind.upper() in {".YAML", ".YML"}:
+        elif mode in {"binary", "raw", "bytes"}:
+            return path.read_bytes()
+        elif mode == "mod":
+            return utils.loadmod(path)
+        elif mode in {"yaml", "yml"}:
             from yaml import safe_load
 
             return safe_load(self.load(path.absolute(), "text"))
-        else:
-            raise TypeError(f"cannot find type ({kind}) for {path}")
-        return None
+
+        raise TypeError(f"cannot find type ({mode}) for {path}")
+
+
+acloader = LoaderBase(paths=[Path(__file__).parent / "shared"])

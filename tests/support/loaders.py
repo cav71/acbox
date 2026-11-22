@@ -39,29 +39,46 @@ def resolver(request):
         root: Path  # type: ignore[annotation-unchecked]
         name: str  # type: ignore[annotation-unchecked]
 
-        def lookup(self, path: Path | str) -> Path:
+        def lookup(self, name: Path | str, abort: bool = True) -> Path | None:
+            # lookup:
+            #   tests/data/test_abc/path
+            #   tests/data/abc/path
+            #   test/data/path
+            path = Path(name)
             candidates = [
                 self.root / self.name / path,
-                self.root / path,
             ]
+            if self.name.startswith("test_"):
+                candidates.append(self.root / self.name[len("test_") :] / path)
+            candidates.append(self.root / path)
+
             for candidate in candidates:
                 if candidate.exists():
                     return candidate
-            raise FileNotFoundError(f"cannot find {path}", candidates)
+            if abort:
+                raise FileNotFoundError(f"cannot find {path}", candidates)
+            return None
 
-        def load(self, path: Path, mode: str | None = None) -> Any:
-            source = self.lookup(path)
-            mode = mode or source.suffix.strip(".")
+        def load(self, name: Path | str, mode: str | None = None, abort: bool = True) -> Any:
+            if not (path := self.lookup(name, abort=abort)):
+                return None
+            mode = mode or path.suffix.strip(".").lower()
+
             if mode == "json":
-                return json.loads(source.read_text())
+                return json.loads(path.read_text())
             elif mode == "text":
-                return source.read_text()
-            elif mode == "bytes":
-                return source.read_bytes()
+                return path.read_text()
+            elif mode in {"binary", "raw", "bytes"}:
+                return path.read_bytes()
             elif mode == "mod":
-                return loadmod(source)
+                return loadmod(path)
+            elif mode in {"yaml", "yml"}:
+                from yaml import safe_load
+
+                return safe_load(self.load(path.absolute(), "text"))
             elif mode == "toml":
-                return tomllib.loads(source.read_text())
-            raise RuntimeError(f"mode '{mode}' not supported")
+                return tomllib.loads(path.read_text())
+
+            raise TypeError(f"cannot find type ({mode}) for {path}")
 
     yield Resolver(DATADIR, request.module.__name__)

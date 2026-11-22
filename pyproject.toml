@@ -65,7 +65,8 @@ dev = [
 
 [project.optional-dependencies]
 extra = [
-    "pydantic",
+    "pyyaml",
+#    "pydantic",
 ]
 
 [project.urls]
